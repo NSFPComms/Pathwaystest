@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canva Raw Fetch Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f3; color: #1a1a1a; padding: 2rem; }
+    h1 { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; }
+    .sub { font-size: 13px; color: #888; margin-bottom: 1.5rem; line-height: 1.5; }
+    .card { background: #fff; border: 1px solid #e0e0dc; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+    .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 6px; }
+    .value { font-size: 14px; font-weight: 500; }
+    .ok { color: #2d7d46; }
+    .warn { color: #b45309; }
+    .bad { color: #b91c1c; }
+    button { padding: 10px 22px; font-size: 14px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 1.5rem; }
+    button:hover { background: #333; }
+    pre { font-family: "SF Mono", Consolas, monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; color: #333; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+    .names { font-size: 13px; line-height: 1.8; }
+    .tag { display: inline-block; background: #f0f0ec; border-radius: 4px; padding: 1px 6px; margin: 2px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>Canva Raw Fetch Test</h1>
+  <p class="sub">This simulates exactly what Power Automate's HTTP action would receive when it GETs the Canva URL — no JavaScript execution, just raw HTML. If the schedule text appears below, the Power Automate flow will work. If not, we need a different strategy.</p>
+
+  <button onclick="runTest()">Run test</button>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Fetch result</div>
+      <div class="value" id="fetch-status">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Response size</div>
+      <div class="value" id="size-status">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Schedule text found</div>
+      <div class="value" id="text-found">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Names found</div>
+      <div class="value" id="names-found">—</div>
+    </div>
+  </div>
+
+  <div class="card" id="names-card" style="display:none; margin-bottom:1rem;">
+    <div class="label">Extracted names &amp; times</div>
+    <div class="names" id="names-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">First 3000 chars of raw response (what Power Automate sees)</div>
+    <pre id="raw-out">Run the test to see output.</pre>
+  </div>
+
+  <script>
+    var CANVA_URL = 'https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view';
+
+    function runTest() {
+      document.getElementById('fetch-status').textContent = 'Fetching...';
+      document.getElementById('fetch-status').className = 'value';
+
+      // Use a CORS proxy since browser fetch is also cross-origin blocked
+      // We'll try the embed URL directly and a proxy
+      var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(CANVA_URL);
+
+      fetch(proxyUrl)
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          var html = data.contents || '';
+          var size = (html.length / 1024).toFixed(1);
+
+          document.getElementById('fetch-status').textContent = 'Success ✓';
+          document.getElementById('fetch-status').className = 'value ok';
+          document.getElementById('size-status').textContent = size + ' KB';
+
+          // Check for schedule keywords
+          var hasSchedule = html.includes('Pathways') || html.includes('Front Desk') || html.includes('Schedule');
+          var hasNames = html.includes('Diana') || html.includes('Sapna') || html.includes('Montana') || html.includes('Amanda');
+          var hasTimes = html.includes('9AM') || html.includes('10AM') || html.includes('a_GcMg');
+
+          document.getElementById('text-found').textContent = hasSchedule ? 'Yes — text IS in raw HTML ✓' : 'No — page is a JS shell only ✗';
+          document.getElementById('text-found').className = 'value ' + (hasSchedule ? 'ok' : 'bad');
+
+          document.getElementById('names-found').textContent = hasNames ? 'Yes — names visible to Power Automate ✓' : 'No — names not in raw HTML ✗';
+          document.getElementById('names-found').className = 'value ' + (hasNames ? 'ok' : 'warn');
+
+          // Try to extract span text if present
+          if (hasNames || hasSchedule) {
+            var matches = html.match(/<span class="a_GcMg[^"]*"[^>]*>([^<]+)<\/span>/g) || [];
+            var texts = matches.map(function(m) {
+              return m.replace(/<[^>]+>/g, '').trim();
+            }).filter(function(t) { return t.length > 1; });
+            var unique = texts.filter(function(v, i, a) { return a.indexOf(v) === i; });
+
+            if (unique.length > 0) {
+              document.getElementById('names-card').style.display = 'block';
+              document.getElementById('names-list').innerHTML = unique.map(function(t) {
+                return '<span class="tag">' + t + '</span>';
+              }).join('');
+            }
+          }
+
+          document.getElementById('raw-out').textContent = html.substring(0, 3000);
+        })
+        .catch(function(err) {
+          document.getElementById('fetch-status').textContent = 'Failed: ' + err.message;
+          document.getElementById('fetch-status').className = 'value bad';
+          document.getElementById('size-status').textContent = '—';
+          document.getElementById('text-found').textContent = 'Could not fetch';
+          document.getElementById('text-found').className = 'value bad';
+          document.getElementById('names-found').textContent = '—';
+          document.getElementById('raw-out').textContent =
+            'Fetch failed.\n\nThis means the raw HTML is not accessible without a server-side request.\nPower Automate (which runs server-side) may still work — this test is browser-limited by CORS.\n\nError: ' + err.message;
+        });
+    }
+  </script>
+
+</body>
+</html>

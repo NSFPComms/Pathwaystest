@@ -35,13 +35,12 @@ function extractWeekTitle(titleSpans) {
   const joined = titleSpans.join(' ');
   const m = joined.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d+)\s*[-–]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d+,?\s*\d{4})/i);
   if (m) return m[0].trim();
-  return 'Unknown week';
+  return null;
 }
 
 function parseBlock(rawText, titleSpans) {
   const tokens = rawText.split('|').map(t => t.trim()).filter(Boolean);
 
-  // Find days
   const days = [];
   tokens.forEach((tok, i) => {
     DAY_NAMES.forEach((day, di) => {
@@ -54,16 +53,13 @@ function parseBlock(rawText, titleSpans) {
   });
   if (!days.length) return null;
 
-  // Column types: staff, student alternating per day
   const colTypes = [];
   days.forEach(() => { colTypes.push('staff'); colTypes.push('student'); });
   const NUM_COLS = colTypes.length;
 
-  // Find first time slot
   const firstTimeIdx = tokens.findIndex(t => isTimeSlot(t));
   if (firstTimeIdx === -1) return null;
 
-  // Parse time groups
   const timeGroups = [];
   let cur = null;
   tokens.slice(firstTimeIdx).forEach(tok => {
@@ -75,20 +71,17 @@ function parseBlock(rawText, titleSpans) {
     }
   });
 
-  // Assign names to columns across time
   const colAssignment = new Array(NUM_COLS).fill(null);
   const finalShifts = [];
 
   timeGroups.forEach((group) => {
     let nameIdx = 0;
-    // Fill empty columns first
     for (let col = 0; col < NUM_COLS && nameIdx < group.names.length; col++) {
       if (!colAssignment[col]) {
         colAssignment[col] = { name: group.names[nameIdx], startTime: group.time };
         nameIdx++;
       }
     }
-    // Remaining names replace existing student columns (new shift starting)
     for (let col = 0; col < NUM_COLS && nameIdx < group.names.length; col++) {
       if (colAssignment[col] && colTypes[col] === 'student') {
         finalShifts.push({ col, ...colAssignment[col], endTime: group.time });
@@ -98,14 +91,12 @@ function parseBlock(rawText, titleSpans) {
     }
   });
 
-  // Close remaining open assignments
   for (let col = 0; col < NUM_COLS; col++) {
     if (colAssignment[col]) {
       finalShifts.push({ col, ...colAssignment[col], endTime: null });
     }
   }
 
-  // Build schedule
   const schedule = {};
   days.forEach(d => { schedule[d.name] = { date: d.date, staff: null, studentShifts: [] }; });
 
@@ -124,10 +115,32 @@ function parseBlock(rawText, titleSpans) {
     }
   });
 
-  return {
-    week: extractWeekTitle(titleSpans),
-    schedule
-  };
+  return { week: extractWeekTitle(titleSpans), schedule };
+}
+
+function extractFromDOM(pane) {
+  const titleSpans = Array.from(pane.querySelectorAll('p._28USrA span.a_GcMg'))
+    .map(s => s.innerText.trim())
+    .filter(t => t.length > 1);
+
+  const tables = pane.querySelectorAll('table');
+  const results = [];
+
+  tables.forEach(table => {
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const tableData = [];
+    rows.forEach(row => {
+      const cells = Array.from(row.querySelectorAll('td'));
+      if (!cells.length) return;
+      const rowData = cells.map(c => c.innerText.replace(/\s+/g,' ').trim()).filter(t => t.length);
+      if (rowData.length) tableData.push(rowData);
+    });
+    if (tableData.length) {
+      results.push({ titleSpans, rawText: tableData.map(r => r.join(' | ')).join(' | ') });
+    }
+  });
+
+  return results;
 }
 
 (async () => {
@@ -137,62 +150,60 @@ function parseBlock(rawText, titleSpans) {
   console.log('Navigating to Canva...');
   await page.goto(CANVA_URL, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForSelector('table', { timeout: 30000 });
-  await page.waitForTimeout(3000);
-  console.log('Page loaded. Extracting...');
+  await page.waitForTimeout(2000);
 
-  const raw = await page.evaluate(() => {
-    const results = [];
-
-    // Get all Canva slide pages
-    const slidePanes = document.querySelectorAll('._mXnjA');
-
-    slidePanes.forEach(pane => {
-      // Title spans for this slide
-      const titleSpans = Array.from(pane.querySelectorAll('p._28USrA span.a_GcMg'))
-        .map(s => s.innerText.trim())
-        .filter(t => t.length > 1);
-
-      // Tables in this slide
-      const tables = pane.querySelectorAll('table');
-      tables.forEach(table => {
-        const rows = Array.from(table.querySelectorAll('tr'));
-        const tableData = [];
-        rows.forEach(row => {
-          const cells = Array.from(row.querySelectorAll('td'));
-          if (!cells.length) return;
-          const rowData = cells.map(c => c.innerText.replace(/\s+/g,' ').trim()).filter(t => t.length);
-          if (rowData.length) tableData.push(rowData);
-        });
-        if (tableData.length) {
-          results.push({
-            titleSpans,
-            rawText: tableData.map(r => r.join(' | ')).join(' | ')
-          });
-        }
-      });
-    });
-
-    return results;
+  // Get total page count from the "1 / 15" indicator
+  const totalPages = await page.evaluate(() => {
+    const counter = document.querySelector('[aria-valuemax]');
+    return counter ? parseInt(counter.getAttribute('aria-valuemax')) : null;
   });
+  console.log(`Total slides: ${totalPages || 'unknown'}`);
 
-  console.log(`Found ${raw.length} table(s) across slides.`);
-
-  // Deduplicate (Canva renders each slide twice — visible + aria-hidden)
+  const allRaw = [];
   const seen = new Set();
-  const unique = raw.filter(r => {
-    const key = r.rawText.slice(0, 80);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 
-  const schedules = unique.map(r => parseBlock(r.rawText, r.titleSpans)).filter(Boolean);
+  async function collectCurrentSlide() {
+    await page.waitForTimeout(1500); // let slide render
+    const raw = await page.evaluate(extractFromDOM.toString() + `
+      ;const panes = document.querySelectorAll('._mXnjA[aria-hidden="false"], ._mXnjA:not([aria-hidden])');
+      const results = [];
+      panes.forEach(p => extractFromDOM(p).forEach(r => results.push(r)));
+      return results;
+    `);
+    raw.forEach(r => {
+      const key = r.rawText.slice(0, 100);
+      if (!seen.has(key) && r.rawText.includes('AM') && r.rawText.includes('PM')) {
+        seen.add(key);
+        allRaw.push(r);
+        console.log(`  Captured: ${r.titleSpans.slice(0,2).join(' ')}`);
+      }
+    });
+  }
 
-  // Build human-readable summary
+  // Collect first slide
+  await collectCurrentSlide();
+
+  // Click through all remaining slides
+  const pages = totalPages || 20;
+  for (let i = 1; i < pages; i++) {
+    const nextBtn = await page.$('[aria-label="Next page"]');
+    if (!nextBtn) break;
+    const disabled = await nextBtn.getAttribute('aria-disabled');
+    if (disabled === 'true') break;
+    await nextBtn.click();
+    await collectCurrentSlide();
+  }
+
+  console.log(`\nTotal unique schedule tables found: ${allRaw.length}`);
+
+  const schedules = allRaw.map(r => parseBlock(r.rawText, r.titleSpans)).filter(Boolean);
+
+  // Build summary
   const summary = schedules.map(s => {
+    if (!s.week) return null;
     const lines = [`Week of ${s.week}:`];
     Object.entries(s.schedule).forEach(([day, data]) => {
-      lines.push(`  ${day} ${data.date ? '('+data.date+')' : ''}:`);
+      lines.push(`  ${day}${data.date ? ' ('+data.date+')' : ''}:`);
       lines.push(`    Staff: ${data.staff || 'TBD'}`);
       if (data.studentShifts.length) {
         data.studentShifts.forEach(sh => {
@@ -204,17 +215,18 @@ function parseBlock(rawText, titleSpans) {
       }
     });
     return lines.join('\n');
-  }).join('\n\n');
+  }).filter(Boolean).join('\n\n');
 
   const output = {
     lastUpdated: new Date().toISOString(),
     source: CANVA_URL,
+    totalWeeks: schedules.length,
     schedules,
     summary
   };
 
   fs.writeFileSync('schedule.json', JSON.stringify(output, null, 2));
-  console.log('schedule.json written.\n');
-  console.log(summary);
+  console.log('\nschedule.json written.');
+  console.log('\n' + summary);
   await browser.close();
 })();

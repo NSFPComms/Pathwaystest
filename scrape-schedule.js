@@ -118,29 +118,43 @@ function parseBlock(rawText, titleSpans) {
   return { week: extractWeekTitle(titleSpans), schedule };
 }
 
-function extractFromDOM(pane) {
-  const titleSpans = Array.from(pane.querySelectorAll('p._28USrA span.a_GcMg'))
-    .map(s => s.innerText.trim())
-    .filter(t => t.length > 1);
+// Extract raw data from the current DOM state — self-contained, no external references
+async function extractCurrentSlide(page) {
+  return await page.evaluate(() => {
+    const results = [];
+    const panes = document.querySelectorAll('._mXnjA');
 
-  const tables = pane.querySelectorAll('table');
-  const results = [];
+    panes.forEach(pane => {
+      // Skip aria-hidden duplicates
+      if (pane.getAttribute('aria-hidden') === 'true') return;
 
-  tables.forEach(table => {
-    const rows = Array.from(table.querySelectorAll('tr'));
-    const tableData = [];
-    rows.forEach(row => {
-      const cells = Array.from(row.querySelectorAll('td'));
-      if (!cells.length) return;
-      const rowData = cells.map(c => c.innerText.replace(/\s+/g,' ').trim()).filter(t => t.length);
-      if (rowData.length) tableData.push(rowData);
+      const titleSpans = Array.from(pane.querySelectorAll('p._28USrA span.a_GcMg'))
+        .map(s => s.innerText.trim())
+        .filter(t => t.length > 1);
+
+      const tables = pane.querySelectorAll('table');
+      tables.forEach(table => {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const tableData = [];
+        rows.forEach(row => {
+          const cells = Array.from(row.querySelectorAll('td'));
+          if (!cells.length) return;
+          const rowData = cells
+            .map(c => c.innerText.replace(/\s+/g, ' ').trim())
+            .filter(t => t.length > 0);
+          if (rowData.length) tableData.push(rowData);
+        });
+        if (tableData.length) {
+          results.push({
+            titleSpans,
+            rawText: tableData.map(r => r.join(' | ')).join(' | ')
+          });
+        }
+      });
     });
-    if (tableData.length) {
-      results.push({ titleSpans, rawText: tableData.map(r => r.join(' | ')).join(' | ') });
-    }
-  });
 
-  return results;
+    return results;
+  });
 }
 
 (async () => {
@@ -152,70 +166,66 @@ function extractFromDOM(pane) {
   await page.waitForSelector('table', { timeout: 30000 });
   await page.waitForTimeout(2000);
 
-  // Get total page count from the "1 / 15" indicator
+  // Get total page count
   const totalPages = await page.evaluate(() => {
     const counter = document.querySelector('[aria-valuemax]');
-    return counter ? parseInt(counter.getAttribute('aria-valuemax')) : null;
+    return counter ? parseInt(counter.getAttribute('aria-valuemax')) : 15;
   });
-  console.log(`Total slides: ${totalPages || 'unknown'}`);
+  console.log(`Total slides: ${totalPages}`);
 
   const allRaw = [];
   const seen = new Set();
 
-  async function collectCurrentSlide() {
-    await page.waitForTimeout(1500); // let slide render
-    const raw = await page.evaluate(extractFromDOM.toString() + `
-      ;const panes = document.querySelectorAll('._mXnjA[aria-hidden="false"], ._mXnjA:not([aria-hidden])');
-      const results = [];
-      panes.forEach(p => extractFromDOM(p).forEach(r => results.push(r)));
-      return results;
-    `);
+  async function collectSlide() {
+    await page.waitForTimeout(1500);
+    const raw = await extractCurrentSlide(page);
     raw.forEach(r => {
       const key = r.rawText.slice(0, 100);
       if (!seen.has(key) && r.rawText.includes('AM') && r.rawText.includes('PM')) {
         seen.add(key);
         allRaw.push(r);
-        console.log(`  Captured: ${r.titleSpans.slice(0,2).join(' ')}`);
+        const label = r.titleSpans.slice(0, 2).join(' ') || '(no title)';
+        console.log(`  Captured: ${label}`);
       }
     });
   }
 
   // Collect first slide
-  await collectCurrentSlide();
+  await collectSlide();
 
-  // Click through all remaining slides
-  const pages = totalPages || 20;
-  for (let i = 1; i < pages; i++) {
+  // Page through remaining slides
+  for (let i = 1; i < totalPages; i++) {
     const nextBtn = await page.$('[aria-label="Next page"]');
-    if (!nextBtn) break;
+    if (!nextBtn) { console.log('No next button found, stopping.'); break; }
     const disabled = await nextBtn.getAttribute('aria-disabled');
-    if (disabled === 'true') break;
+    if (disabled === 'true') { console.log('Reached last page.'); break; }
     await nextBtn.click();
-    await collectCurrentSlide();
+    await collectSlide();
   }
 
   console.log(`\nTotal unique schedule tables found: ${allRaw.length}`);
 
   const schedules = allRaw.map(r => parseBlock(r.rawText, r.titleSpans)).filter(Boolean);
 
-  // Build summary
-  const summary = schedules.map(s => {
-    if (!s.week) return null;
-    const lines = [`Week of ${s.week}:`];
-    Object.entries(s.schedule).forEach(([day, data]) => {
-      lines.push(`  ${day}${data.date ? ' ('+data.date+')' : ''}:`);
-      lines.push(`    Staff: ${data.staff || 'TBD'}`);
-      if (data.studentShifts.length) {
-        data.studentShifts.forEach(sh => {
-          const end = sh.endTime ? ` until ${sh.endTime}` : '+';
-          lines.push(`    Student staff: ${sh.name} (${sh.startTime}${end})`);
-        });
-      } else {
-        lines.push(`    Student staff: TBD`);
-      }
-    });
-    return lines.join('\n');
-  }).filter(Boolean).join('\n\n');
+  const summary = schedules
+    .filter(s => s.week)
+    .map(s => {
+      const lines = [`Week of ${s.week}:`];
+      Object.entries(s.schedule).forEach(([day, data]) => {
+        lines.push(`  ${day}${data.date ? ' (' + data.date + ')' : ''}:`);
+        lines.push(`    Staff: ${data.staff || 'TBD'}`);
+        if (data.studentShifts.length) {
+          data.studentShifts.forEach(sh => {
+            const end = sh.endTime ? ` until ${sh.endTime}` : '+';
+            lines.push(`    Student staff: ${sh.name} (${sh.startTime}${end})`);
+          });
+        } else {
+          lines.push(`    Student staff: TBD`);
+        }
+      });
+      return lines.join('\n');
+    })
+    .join('\n\n');
 
   const output = {
     lastUpdated: new Date().toISOString(),
@@ -226,7 +236,8 @@ function extractFromDOM(pane) {
   };
 
   fs.writeFileSync('schedule.json', JSON.stringify(output, null, 2));
-  console.log('\nschedule.json written.');
-  console.log('\n' + summary);
+  console.log('\nschedule.json written successfully.');
+  console.log('\n--- SUMMARY ---\n' + summary);
+
   await browser.close();
 })();

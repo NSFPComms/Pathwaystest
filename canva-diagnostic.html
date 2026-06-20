@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canva Embed Diagnostic</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 0.35rem;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 1.75rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid #d0d0cc;
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a1a;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: #888;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:hover { background: #333; }
+    button:active { transform: scale(0.98); }
+
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e0e0dc;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .card-value {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .status-pending  { color: #888; }
+    .status-ok       { color: #2d7d46; }
+    .status-blocked  { color: #b91c1c; }
+    .status-partial  { color: #b45309; }
+
+    .text-output {
+      background: #fff;
+      border: 1px solid #e0e0dc;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .text-output h2 {
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+
+    #extracted-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #333;
+      white-space: pre-wrap;
+      min-height: 80px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .verdict {
+      background: #fff;
+      border: 1px solid #e0e0dc;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .verdict h2 {
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    #verdict-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    #iframe-container {
+      background: #fff;
+      border: 1px solid #e0e0dc;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #iframe-container h2 {
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem 0.75rem;
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 500px;
+      border: none;
+      border-top: 1px solid #e0e0dc;
+    }
+
+    .log {
+      font-family: "SF Mono", "Consolas", monospace;
+      font-size: 12px;
+      color: #555;
+      background: #f9f9f7;
+      border: 1px solid #e0e0dc;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Canva Embed Diagnostic</h1>
+  <p class="subtitle">Paste a public Canva view link below to test whether its text content is extractable.</p>
+
+  <div class="input-row">
+    <input type="text" id="canva-url" placeholder="https://www.canva.com/design/XXXXX.../view" />
+    <button onclick="runDiagnostic()">Run diagnostic</button>
+  </div>
+
+  <div class="results">
+    <div class="card">
+      <div class="card-label">Embed status</div>
+      <div class="card-value status-pending" id="embed-status">Waiting...</div>
+    </div>
+    <div class="card">
+      <div class="card-label">DOM access</div>
+      <div class="card-value status-pending" id="dom-status">Waiting...</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Text in DOM</div>
+      <div class="card-value status-pending" id="text-status">Waiting...</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Canvas elements</div>
+      <div class="card-value status-pending" id="canvas-status">Waiting...</div>
+    </div>
+  </div>
+
+  <div class="text-output">
+    <h2>Extracted text</h2>
+    <div id="extracted-text">Text content will appear here after the diagnostic runs.</div>
+  </div>
+
+  <div class="verdict">
+    <h2>Verdict</h2>
+    <div id="verdict-text">Run the diagnostic to see results.</div>
+  </div>
+
+  <div id="iframe-container">
+    <h2>Live iframe preview</h2>
+    <iframe id="canva-frame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+  </div>
+
+  <div class="log" id="log">— diagnostic log —
+</div>
+
+  <script>
+    var logEl = document.getElementById('log');
+
+    function log(msg) {
+      logEl.textContent += '\n' + msg;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setStatus(id, text, cls) {
+      var el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'card-value ' + cls;
+    }
+
+    function runDiagnostic() {
+      var url = document.getElementById('canva-url').value.trim();
+      if (!url) { alert('Please enter a Canva URL first.'); return; }
+
+      // Reset UI
+      ['embed-status','dom-status','text-status','canvas-status'].forEach(function(id) {
+        setStatus(id, 'Testing...', 'status-pending');
+      });
+      document.getElementById('extracted-text').textContent = '';
+      document.getElementById('verdict-text').textContent = 'Running...';
+      logEl.textContent = '— diagnostic log —\n';
+      log('URL: ' + url);
+      log('Loading iframe...');
+
+      var frame = document.getElementById('canva-frame');
+      var loaded = false;
+      var blocked = false;
+
+      // Timeout — if no load event fires, the iframe was blocked
+      var timeout = setTimeout(function() {
+        if (!loaded) {
+          blocked = true;
+          log('Timeout: no load event after 10s — likely blocked by X-Frame-Options');
+          setStatus('embed-status', 'Blocked (X-Frame-Options)', 'status-blocked');
+          setStatus('dom-status', 'N/A', 'status-blocked');
+          setStatus('text-status', 'N/A', 'status-blocked');
+          setStatus('canvas-status', 'N/A', 'status-blocked');
+          document.getElementById('extracted-text').textContent = 'Embed was blocked. Canva is refusing to load inside an iframe.';
+          document.getElementById('verdict-text').innerHTML =
+            '<strong>Result: Canvas/iframe approach will NOT work.</strong><br><br>' +
+            'Canva is sending X-Frame-Options or Content-Security-Policy headers that block embedding. ' +
+            'The YouTube proxy pattern cannot be applied here because Canva actively prevents framing. ' +
+            'Next options: (1) manual paste tool, (2) Power Automate Desktop browser automation, or (3) Canva API.';
+        }
+      }, 10000);
+
+      frame.onload = function() {
+        if (blocked) return;
+        loaded = true;
+        clearTimeout(timeout);
+        log('iframe load event fired — embed succeeded!');
+        setStatus('embed-status', 'Loaded ✓', 'status-ok');
+
+        // Try DOM access
+        setTimeout(function() {
+          attemptDOMRead(frame);
+        }, 2000); // Give JS inside the frame time to render
+      };
+
+      frame.onerror = function() {
+        clearTimeout(timeout);
+        log('iframe onerror fired — hard block');
+        setStatus('embed-status', 'Error loading', 'status-blocked');
+      };
+
+      frame.src = url;
+    }
+
+    function attemptDOMRead(frame) {
+      log('Attempting to read iframe contentDocument...');
+      var doc;
+      try {
+        doc = frame.contentDocument || frame.contentWindow.document;
+        log('Got contentDocument — same-origin or permissive CORS');
+        setStatus('dom-status', 'Accessible ✓', 'status-ok');
+      } catch(e) {
+        log('contentDocument blocked: ' + e.message);
+        setStatus('dom-status', 'Blocked (cross-origin)', 'status-blocked');
+        document.getElementById('extracted-text').textContent =
+          'Iframe loaded visually but DOM is not accessible due to cross-origin restrictions. ' +
+          'The browser blocks reading another origin\'s DOM even when the iframe loads.';
+        assessVerdict(true, false, false, false);
+        return;
+      }
+
+      if (!doc || !doc.body) {
+        log('contentDocument exists but body is empty');
+        setStatus('dom-status', 'Empty body', 'status-partial');
+        assessVerdict(true, true, false, false);
+        return;
+      }
+
+      // Count canvas elements
+      var canvases = doc.querySelectorAll('canvas');
+      log('Canvas elements found: ' + canvases.length);
+      if (canvases.length > 0) {
+        setStatus('canvas-status', canvases.length + ' canvas element(s)', 'status-partial');
+      } else {
+        setStatus('canvas-status', 'None found', 'status-ok');
+      }
+
+      // Extract text
+      var allText = [];
+      var walker = document.createTreeWalker(
+        doc.body,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      var node;
+      while ((node = walker.nextNode())) {
+        var t = node.textContent.trim();
+        if (t.length > 2) allText.push(t);
+      }
+
+      log('Text nodes found: ' + allText.length);
+
+      if (allText.length > 0) {
+        setStatus('text-status', allText.length + ' text node(s) ✓', 'status-ok');
+        document.getElementById('extracted-text').textContent = allText.join('\n');
+        assessVerdict(true, true, true, canvases.length > 0);
+      } else {
+        setStatus('text-status', 'No text in DOM', 'status-blocked');
+        document.getElementById('extracted-text').textContent =
+          'No readable text found in the DOM. Content is likely rendered to <canvas> elements (pixels only).';
+        assessVerdict(true, true, false, canvases.length > 0);
+      }
+    }
+
+    function assessVerdict(embeds, domAccessible, hasText, hasCanvas) {
+      var v = document.getElementById('verdict-text');
+      if (!embeds) {
+        v.innerHTML = '<strong>Blocked at embed.</strong> Canva refuses to load in an iframe. The proxy pattern cannot work.';
+      } else if (!domAccessible) {
+        v.innerHTML = '<strong>Embeds visually, but DOM is locked.</strong> Cross-origin policy blocks JS from reading the content. ' +
+          'The iframe renders Canva correctly but your code cannot touch it. ' +
+          'Result: same as blocked for text-extraction purposes.';
+      } else if (hasText) {
+        v.innerHTML = '<strong>SUCCESS — text is in the DOM and readable.</strong> ' +
+          'The proxy pattern will work. Next step: build a GitHub Pages page that embeds this URL, reads its text, and POSTs it to your Power Automate flow automatically.';
+      } else if (hasCanvas) {
+        v.innerHTML = '<strong>DOM accessible but text is in canvas elements (pixels).</strong> ' +
+          'Canva is rendering visually but not exposing text nodes. OCR would be needed, which adds significant complexity. ' +
+          'Recommend: manual paste tool or Power Automate Desktop approach instead.';
+      } else {
+        v.innerHTML = '<strong>DOM accessible but no text found and no canvas either.</strong> ' +
+          'Content may still be loading — try waiting longer before re-running, or the design type may not expose text at all.';
+      }
+    }
+  </script>
+
+</body>
+</html>

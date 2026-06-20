@@ -3,8 +3,131 @@ const fs = require('fs');
 
 const CANVA_URL = 'https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view';
 
-function extractText(el) {
-  return el.innerText?.replace(/\s+/g, ' ').trim() || '';
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const DAY_PATTERNS = [/monday/i,/tuesday/i,/wednesday/i,/thursday/i,/friday/i];
+
+function isTimeSlot(t) {
+  return /^\d+\s*(AM|PM)\s*-\s*\d+\s*(AM|PM)$/i.test(t.trim());
+}
+
+function cleanName(raw) {
+  return raw.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\s+/g, ' ').trim();
+}
+
+function isSkip(token) {
+  const t = token.toLowerCase().replace(/\s+/g, '');
+  if (['staff','studentstaff','2ndfloor'].includes(t)) return true;
+  if (DAY_PATTERNS.some(p => p.test(token))) return true;
+  if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*\d+/i.test(token.trim())) return true;
+  if (/^\(.*\)$/.test(token.trim())) return true;
+  return false;
+}
+
+function isName(token) {
+  const t = token.trim();
+  if (!t || t.length < 2) return false;
+  if (isTimeSlot(t)) return false;
+  if (isSkip(t)) return false;
+  return /[a-zA-Z]{2,}/.test(t);
+}
+
+function extractWeekTitle(titleSpans) {
+  const joined = titleSpans.join(' ');
+  const m = joined.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d+)\s*[-–]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d+,?\s*\d{4})/i);
+  if (m) return m[0].trim();
+  return 'Unknown week';
+}
+
+function parseBlock(rawText, titleSpans) {
+  const tokens = rawText.split('|').map(t => t.trim()).filter(Boolean);
+
+  // Find days
+  const days = [];
+  tokens.forEach((tok, i) => {
+    DAY_NAMES.forEach((day, di) => {
+      if (DAY_PATTERNS[di].test(tok) && !days.find(d => d.name === day)) {
+        const combined = tok + ' ' + (tokens[i+1] || '');
+        const dateM = combined.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+)/i);
+        days.push({ name: day, date: dateM ? dateM[1].replace(/\s+/,' ').trim() : null });
+      }
+    });
+  });
+  if (!days.length) return null;
+
+  // Column types: staff, student alternating per day
+  const colTypes = [];
+  days.forEach(() => { colTypes.push('staff'); colTypes.push('student'); });
+  const NUM_COLS = colTypes.length;
+
+  // Find first time slot
+  const firstTimeIdx = tokens.findIndex(t => isTimeSlot(t));
+  if (firstTimeIdx === -1) return null;
+
+  // Parse time groups
+  const timeGroups = [];
+  let cur = null;
+  tokens.slice(firstTimeIdx).forEach(tok => {
+    if (isTimeSlot(tok)) {
+      cur = { time: tok.trim(), names: [] };
+      timeGroups.push(cur);
+    } else if (isName(tok) && cur) {
+      cur.names.push(cleanName(tok));
+    }
+  });
+
+  // Assign names to columns across time
+  const colAssignment = new Array(NUM_COLS).fill(null);
+  const finalShifts = [];
+
+  timeGroups.forEach((group) => {
+    let nameIdx = 0;
+    // Fill empty columns first
+    for (let col = 0; col < NUM_COLS && nameIdx < group.names.length; col++) {
+      if (!colAssignment[col]) {
+        colAssignment[col] = { name: group.names[nameIdx], startTime: group.time };
+        nameIdx++;
+      }
+    }
+    // Remaining names replace existing student columns (new shift starting)
+    for (let col = 0; col < NUM_COLS && nameIdx < group.names.length; col++) {
+      if (colAssignment[col] && colTypes[col] === 'student') {
+        finalShifts.push({ col, ...colAssignment[col], endTime: group.time });
+        colAssignment[col] = { name: group.names[nameIdx], startTime: group.time };
+        nameIdx++;
+      }
+    }
+  });
+
+  // Close remaining open assignments
+  for (let col = 0; col < NUM_COLS; col++) {
+    if (colAssignment[col]) {
+      finalShifts.push({ col, ...colAssignment[col], endTime: null });
+    }
+  }
+
+  // Build schedule
+  const schedule = {};
+  days.forEach(d => { schedule[d.name] = { date: d.date, staff: null, studentShifts: [] }; });
+
+  finalShifts.forEach(shift => {
+    const dayIdx = Math.floor(shift.col / 2);
+    const day = days[dayIdx];
+    if (!day) return;
+    if (colTypes[shift.col] === 'staff') {
+      schedule[day.name].staff = shift.name;
+    } else {
+      schedule[day.name].studentShifts.push({
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        name: shift.name
+      });
+    }
+  });
+
+  return {
+    week: extractWeekTitle(titleSpans),
+    schedule
+  };
 }
 
 (async () => {
@@ -13,140 +136,85 @@ function extractText(el) {
 
   console.log('Navigating to Canva...');
   await page.goto(CANVA_URL, { waitUntil: 'networkidle', timeout: 60000 });
-
-  // Wait for the table to render
   await page.waitForSelector('table', { timeout: 30000 });
-  // Extra buffer for all cells to populate
   await page.waitForTimeout(3000);
+  console.log('Page loaded. Extracting...');
 
-  console.log('Page loaded. Extracting schedule data...');
+  const raw = await page.evaluate(() => {
+    const results = [];
 
-  const result = await page.evaluate(() => {
-    const pages = [];
+    // Get all Canva slide pages
+    const slidePanes = document.querySelectorAll('._mXnjA');
 
-    // Each "page" in the Canva doc is a separate slide/section
-    // The table is the schedule grid — find all tables on the page
-    const tables = document.querySelectorAll('table');
+    slidePanes.forEach(pane => {
+      // Title spans for this slide
+      const titleSpans = Array.from(pane.querySelectorAll('p._28USrA span.a_GcMg'))
+        .map(s => s.innerText.trim())
+        .filter(t => t.length > 1);
 
-    tables.forEach((table, tableIndex) => {
-      // Extract header: look for title text above the table
-      // Canva puts the title in a span with class a_GcMg before the table
-      const allSpans = Array.from(document.querySelectorAll('span.a_GcMg'));
-
-      // Get all text from the table cells
-      const rows = Array.from(table.querySelectorAll('tr'));
-      const tableData = [];
-
-      rows.forEach(row => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        if (cells.length === 0) return;
-        const rowData = cells.map(cell => {
-          return cell.innerText.replace(/\s+/g, ' ').trim();
-        }).filter(t => t.length > 0);
-        if (rowData.length > 0) tableData.push(rowData);
+      // Tables in this slide
+      const tables = pane.querySelectorAll('table');
+      tables.forEach(table => {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const tableData = [];
+        rows.forEach(row => {
+          const cells = Array.from(row.querySelectorAll('td'));
+          if (!cells.length) return;
+          const rowData = cells.map(c => c.innerText.replace(/\s+/g,' ').trim()).filter(t => t.length);
+          if (rowData.length) tableData.push(rowData);
+        });
+        if (tableData.length) {
+          results.push({
+            titleSpans,
+            rawText: tableData.map(r => r.join(' | ')).join(' | ')
+          });
+        }
       });
-
-      if (tableData.length > 0) {
-        pages.push({ tableIndex, rows: tableData });
-      }
     });
 
-    // Also grab all visible span text for the title/week info
-    const titleSpans = Array.from(document.querySelectorAll('p._28USrA span.a_GcMg'))
-      .map(s => s.innerText.trim())
-      .filter(t => t.length > 1);
-
-    return { pages, titleSpans };
+    return results;
   });
 
-  // Now structure the data properly
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const timeSlots = ['9AM-10AM', '10AM-11AM', '11AM-12PM', '12PM-1PM', '1PM-2PM', '2PM-3PM', '3PM-4PM', '4PM-5PM'];
+  console.log(`Found ${raw.length} table(s) across slides.`);
 
-  // Parse each table into a schedule object
-  const schedules = result.pages.map((page, i) => {
-    const rows = page.rows;
+  // Deduplicate (Canva renders each slide twice — visible + aria-hidden)
+  const seen = new Set();
+  const unique = raw.filter(r => {
+    const key = r.rawText.slice(0, 80);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-    // Find the week title from titleSpans — look for date range patterns
-    const weekTitle = result.titleSpans.find(t =>
-      t.match(/may|june|july|august|september|week/i)
-    ) || `Week ${i + 1}`;
+  const schedules = unique.map(r => parseBlock(r.rawText, r.titleSpans)).filter(Boolean);
 
-    // Build a structured day→time→person map from raw rows
-    const schedule = {};
-    days.forEach(d => schedule[d] = {});
-    timeSlots.forEach(t => days.forEach(d => schedule[d][t] = null));
-
-    // The raw table rows contain day headers and staff names
-    // Extract day columns and time rows heuristically
-    let dayHeaders = [];
-    let currentTime = null;
-
-    rows.forEach(row => {
-      // Check if this row looks like day headers
-      const isDayRow = row.some(cell =>
-        /monday|tuesday|wednesday|thursday|friday/i.test(cell)
-      );
-      if (isDayRow) {
-        dayHeaders = row.filter(cell =>
-          /monday|tuesday|wednesday|thursday|friday/i.test(cell)
-        ).map(cell => {
-          if (/monday/i.test(cell)) return 'Monday';
-          if (/tuesday/i.test(cell)) return 'Tuesday';
-          if (/wednesday/i.test(cell)) return 'Wednesday';
-          if (/thursday/i.test(cell)) return 'Thursday';
-          if (/friday/i.test(cell)) return 'Friday';
-          return cell;
+  // Build human-readable summary
+  const summary = schedules.map(s => {
+    const lines = [`Week of ${s.week}:`];
+    Object.entries(s.schedule).forEach(([day, data]) => {
+      lines.push(`  ${day} ${data.date ? '('+data.date+')' : ''}:`);
+      lines.push(`    Staff: ${data.staff || 'TBD'}`);
+      if (data.studentShifts.length) {
+        data.studentShifts.forEach(sh => {
+          const end = sh.endTime ? ` until ${sh.endTime}` : '+';
+          lines.push(`    Student staff: ${sh.name} (${sh.startTime}${end})`);
         });
-        return;
-      }
-
-      // Check if this row starts with a time slot
-      const timeMatch = row[0]?.match(/(\d+(?:AM|PM)\s*-\s*\d+(?:AM|PM))/i);
-      if (timeMatch) {
-        currentTime = timeMatch[1].replace(/\s/g, '').toUpperCase();
-        return;
-      }
-
-      // Otherwise it's staff data — assign to current time + day
-      if (currentTime && dayHeaders.length > 0) {
-        row.forEach((name, idx) => {
-          const day = dayHeaders[idx];
-          if (day && name && !['staff', 'student staff', 'student\nstaff'].includes(name.toLowerCase())) {
-            if (!schedule[day]) schedule[day] = {};
-            schedule[day][currentTime] = name;
-          }
-        });
+      } else {
+        lines.push(`    Student staff: TBD`);
       }
     });
-
-    return {
-      week: weekTitle,
-      schedule
-    };
-  });
-
-  // Also pull a flat people list for quick reference
-  const allNames = new Set();
-  result.titleSpans.forEach(s => {
-    if (s.match(/^[A-Z][a-z]+ [A-Z][a-z]+$/) || s.match(/^[A-Z][a-z]+$/)) {
-      allNames.add(s);
-    }
-  });
+    return lines.join('\n');
+  }).join('\n\n');
 
   const output = {
     lastUpdated: new Date().toISOString(),
     source: CANVA_URL,
-    rawTitleText: result.titleSpans,
     schedules,
-    // Flat text dump as fallback for Power Automate parsing
-    rawText: result.pages.map(p => p.rows.flat().join(' | ')).join('\n\n')
+    summary
   };
 
   fs.writeFileSync('schedule.json', JSON.stringify(output, null, 2));
-  console.log('schedule.json written successfully.');
-  console.log('Title spans found:', result.titleSpans.slice(0, 10));
-  console.log('Tables found:', result.pages.length);
-
+  console.log('schedule.json written.\n');
+  console.log(summary);
   await browser.close();
 })();

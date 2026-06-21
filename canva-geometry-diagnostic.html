@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canva Geometry Diagnostic</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f3; color: #1a1a1a; padding: 1.5rem; }
+    h1 { font-size: 17px; font-weight: 500; margin-bottom: 0.25rem; }
+    .sub { font-size: 13px; color: #888; margin-bottom: 1.25rem; line-height: 1.5; }
+    .controls { display: flex; gap: 10px; margin-bottom: 1.25rem; align-items: center; flex-wrap: wrap; }
+    button { padding: 9px 18px; font-size: 13px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 7px; cursor: pointer; }
+    button:hover { background: #333; }
+    button.sec { background: #fff; color: #1a1a1a; border: 1px solid #ccc; }
+    .status { font-size: 13px; color: #888; padding: 8px 0; }
+    .embed-wrap { position: relative; width: 100%; padding-top: 77.27%; margin-bottom: 1.25rem; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.1); background: #fff; }
+    iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0dc; }
+    th { background: #e8eaf6; padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #283593; border-bottom: 2px solid #c5cae9; white-space: nowrap; }
+    td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; line-height: 1.4; }
+    tr:hover td { background: #fafafa; }
+    .name-cell { font-weight: 500; }
+    .big { color: #2d7d46; }
+    .small { color: #b45309; }
+    .copy-btn { margin-top: 1rem; }
+    #output { display: none; }
+    .legend { font-size: 12px; color: #555; margin-bottom: 0.75rem; }
+    .legend span { display: inline-block; margin-right: 12px; }
+    .dot-big { color: #2d7d46; font-weight: 600; }
+    .dot-small { color: #b45309; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<h1>Canva Cell Geometry Diagnostic</h1>
+<p class="sub">Embeds the Canva schedule, then reads the bounding box (position + size) of every named cell. Use this to calibrate day/time/role mapping by pixel position.</p>
+
+<div class="controls">
+  <button onclick="runDiagnostic()">Read cell geometry</button>
+  <button class="sec" onclick="copyResults()">Copy JSON</button>
+  <span class="status" id="status">Load the page, then click the button after the schedule renders.</span>
+</div>
+
+<div class="embed-wrap">
+  <iframe id="canva-frame"
+    src="https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view?embed"
+    allowfullscreen allow="fullscreen">
+  </iframe>
+</div>
+
+<div class="legend">
+  <span class="dot-big">● Tall (≥200px)</span> = likely full day or long shift &nbsp;
+  <span class="dot-small">● Short (&lt;200px)</span> = partial shift
+</div>
+
+<div id="results-wrap" style="display:none;">
+  <table id="results-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Text</th>
+        <th>Left (px)</th>
+        <th>Top (px)</th>
+        <th>Width (px)</th>
+        <th>Height (px)</th>
+        <th>Right edge</th>
+        <th>Bottom edge</th>
+        <th>Size</th>
+      </tr>
+    </thead>
+    <tbody id="results-body"></tbody>
+  </table>
+</div>
+
+<textarea id="output" rows="10" style="width:100%;margin-top:1rem;font-family:monospace;font-size:11px;padding:8px;border:1px solid #ccc;border-radius:6px;"></textarea>
+
+<script>
+var lastResults = [];
+
+function runDiagnostic() {
+  document.getElementById('status').textContent = 'Reading cell geometry...';
+  document.getElementById('results-wrap').style.display = 'none';
+
+  var frame = document.getElementById('canva-frame');
+  var frameRect = frame.getBoundingClientRect();
+
+  var doc;
+  try {
+    doc = frame.contentDocument || frame.contentWindow.document;
+  } catch(e) {
+    document.getElementById('status').textContent = 'Cross-origin block — DOM not accessible from parent. This needs to run on the same origin as Canva, or via the scraper directly.';
+    return;
+  }
+
+  if (!doc || !doc.body) {
+    document.getElementById('status').textContent = 'iframe loaded but body is empty — try waiting longer for the schedule to render.';
+    return;
+  }
+
+  // Find all elements that contain name text
+  // Strategy: find all span.a_GcMg (Canva text spans) that have meaningful text
+  // and get their nearest positioned ancestor's bounding rect
+  var spans = Array.from(doc.querySelectorAll('span.a_GcMg'));
+  var cells = [];
+  var seen = new Set();
+
+  // Skip tokens
+  var SKIP = /^(staff|student\s*staff|2nd\s*floor|ops|urp|pha|cpd|nsf|exp|open\s*shift|monday|tuesday|wednesday|thursday|friday|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d+am|\d+pm|\d+am\s*-\s*\d+pm|\(|\))/i;
+
+  spans.forEach(function(span) {
+    var text = span.innerText.replace(/\s+/g, ' ').trim();
+    if (!text || text.length < 2) return;
+    if (SKIP.test(text)) return;
+    if (/^\(?(may|june?|july?|aug)[^)]*\)?$/i.test(text)) return;
+
+    // Find the nearest table cell ancestor to get a stable bounding box
+    var el = span;
+    var tdAncestor = null;
+    while (el && el !== doc.body) {
+      if (el.tagName === 'TD') { tdAncestor = el; break; }
+      el = el.parentElement;
+    }
+
+    var target = tdAncestor || span;
+    var rect = target.getBoundingClientRect();
+
+    // Skip tiny elements
+    if (rect.height < 5 || rect.width < 5) return;
+
+    var key = Math.round(rect.left) + ',' + Math.round(rect.top) + ',' + text.slice(0, 20);
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    cells.push({
+      text: text,
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      right: Math.round(rect.left + rect.width),
+      bottom: Math.round(rect.top + rect.height)
+    });
+  });
+
+  // Sort by top then left (reading order)
+  cells.sort(function(a, b) {
+    if (Math.abs(a.top - b.top) > 10) return a.top - b.top;
+    return a.left - b.left;
+  });
+
+  lastResults = cells;
+
+  // Render table
+  var tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  cells.forEach(function(c, i) {
+    var isTall = c.height >= 200;
+    var sizeClass = isTall ? 'big' : 'small';
+    var sizeLabel = isTall ? '● Tall' : '● Short';
+    var tr = document.createElement('tr');
+    tr.innerHTML = [
+      '<td>' + (i+1) + '</td>',
+      '<td class="name-cell">' + c.text + '</td>',
+      '<td>' + c.left + '</td>',
+      '<td>' + c.top + '</td>',
+      '<td>' + c.width + '</td>',
+      '<td>' + c.height + '</td>',
+      '<td>' + c.right + '</td>',
+      '<td>' + c.bottom + '</td>',
+      '<td class="' + sizeClass + '">' + sizeLabel + '</td>'
+    ].join('');
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('results-wrap').style.display = 'block';
+  document.getElementById('output').value = JSON.stringify(cells, null, 2);
+  document.getElementById('status').textContent = 'Found ' + cells.length + ' named cells. Scroll down to see results.';
+}
+
+function copyResults() {
+  var ta = document.getElementById('output');
+  ta.style.display = 'block';
+  ta.select();
+  document.execCommand('copy');
+  ta.style.display = 'none';
+  document.getElementById('status').textContent = 'JSON copied to clipboard!';
+}
+</script>
+
+</body>
+</html>

@@ -237,7 +237,9 @@ function parseSlideGeometry(slideData) {
 
 (async () => {
   const browser = await chromium.launch();
+  // Large viewport so Canva renders the table at full resolution — essential for sub-pixel half-hour gap detection
   const page = await browser.newPage();
+  await page.setViewportSize({ width: 1600, height: 900 });
   console.log('Navigating...');
   await page.goto(CANVA_URL, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForSelector('table', { timeout: 30000 });

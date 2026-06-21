@@ -10,7 +10,6 @@ const TIME_SLOTS = [
 ];
 
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
-const DAY_PATTERNS = [/monday/i,/tuesday/i,/wednesday/i,/thursday/i,/friday/i];
 
 function extractWeekTitle(titleSpans) {
   const joined = titleSpans.join(' ');
@@ -30,15 +29,8 @@ async function extractSlideGeometry(page) {
     panes.forEach(pane => {
       if (pane.getAttribute('aria-hidden') === 'true') return;
 
-      // Get title from ALL text spans in the pane — title may be at top or bottom
-      const allSpans = Array.from(pane.querySelectorAll('span.a_GcMg'))
+      const titleSpans = Array.from(pane.querySelectorAll('span.a_GcMg'))
         .map(s => s.innerText.trim()).filter(t => t.length > 1);
-
-      // Find week title specifically
-      const titleSpans = allSpans.filter(t =>
-        /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d+\s*[-–]\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d+/i.test(t) ||
-        /pathways/i.test(t)
-      );
 
       const table = pane.querySelector('table');
       if (!table) return;
@@ -46,11 +38,7 @@ async function extractSlideGeometry(page) {
       const tableRect = table.getBoundingClientRect();
       if (tableRect.height < 10) return;
 
-      // Query BOTH td and th
       const allCells = Array.from(table.querySelectorAll('td, th'));
-
-      // Debug: log all cell texts to find day headers
-      const allCellTexts = allCells.map(c => c.innerText.replace(/\s+/g,' ').trim()).filter(t => t.length > 0);
 
       // Col headers
       const colHeaders = allCells
@@ -65,64 +53,58 @@ async function extractSlideGeometry(page) {
           };
         }).sort((a,b) => a.left - b.left);
 
-      // Day headers — look for cells containing day names
-      const seenDays = new Set();
-      const dayHeaders = allCells
-        .filter(c => DAY_PATTERNS.some(p => p.test(c.innerText)))
-        .map(c => {
-          const text = c.innerText.replace(/\s+/g,' ').trim();
-          const r = c.getBoundingClientRect();
-          let dayName = null;
-          DAY_NAMES.forEach((d,i) => { if (DAY_PATTERNS[i].test(text)) dayName = d; });
-          const dateM = text.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+)/i);
-          return {
-            dayName,
-            date: dateM ? dateM[1].replace(/\s+/,' ').trim() : null,
-            left: Math.round(r.left - tableRect.left),
-            right: Math.round(r.right - tableRect.left),
-            top: Math.round(r.top - tableRect.top),
-            text
-          };
-        })
-        .filter(d => d.dayName && !seenDays.has(d.dayName) && !seenDays.add(d.dayName))
-        .sort((a,b) => a.left - b.left);
+      // Day headers — FIX: don't use Set.add() in filter, use separate tracking
+      const daysSeen = {};
+      const dayHeaders = [];
+      allCells.forEach(c => {
+        const text = c.innerText.replace(/\s+/g,' ').trim();
+        let dayName = null;
+        DAY_NAMES.forEach((d,i) => { if (DAY_PATTERNS[i].test(text)) dayName = d; });
+        if (!dayName) return;
+        if (daysSeen[dayName]) return;
+        daysSeen[dayName] = true;
+        const r = c.getBoundingClientRect();
+        const dateM = text.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+)/i);
+        dayHeaders.push({
+          dayName,
+          date: dateM ? dateM[1].replace(/\s+/,' ').trim() : null,
+          left: Math.round(r.left - tableRect.left),
+          right: Math.round(r.right - tableRect.left),
+          top: Math.round(r.top - tableRect.top)
+        });
+      });
+      dayHeaders.sort((a,b) => a.left - b.left);
 
-      // Named cells — td/th that aren't headers or times
-      const seen = new Set();
-      const namedCells = allCells
-        .filter(c => {
-          const text = c.innerText.replace(/\s+/g,' ').trim();
-          if (!text || text.length < 2) return false;
-          if (SKIP_RE.test(text)) return false;
-          if (DAY_PATTERNS.some(p => p.test(text))) return false;
-          if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+/i.test(text)) return false;
-          if (/^\(/.test(text)) return false;
-          return true;
-        })
-        .map(c => {
-          const text = c.innerText.replace(/\s+/g,' ').trim();
-          const r = c.getBoundingClientRect();
-          const relLeft = Math.round(r.left - tableRect.left);
-          const relTop = Math.round(r.top - tableRect.top);
-          const key = relLeft + ',' + relTop + ',' + text.slice(0,15);
-          if (seen.has(key)) return null;
-          seen.add(key);
-          return {
-            text,
-            left: relLeft,
-            top: relTop,
-            width: Math.round(r.width),
-            height: Math.round(r.height),
-            right: Math.round(r.right - tableRect.left),
-            bottom: Math.round(r.bottom - tableRect.top)
-          };
-        })
-        .filter(Boolean)
-        .sort((a,b) => Math.abs(a.top-b.top)>5 ? a.top-b.top : a.left-b.left);
+      // Named cells — not headers, not times, not day names
+      const seen = {};
+      const namedCells = [];
+      allCells.forEach(c => {
+        const text = c.innerText.replace(/\s+/g,' ').trim();
+        if (!text || text.length < 2) return;
+        if (SKIP_RE.test(text)) return;
+        if (DAY_PATTERNS.some(p => p.test(text))) return;
+        if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+/i.test(text)) return;
+        if (/^\(/.test(text)) return;
+        const r = c.getBoundingClientRect();
+        const relLeft = Math.round(r.left - tableRect.left);
+        const relTop = Math.round(r.top - tableRect.top);
+        const key = relLeft + ',' + relTop + ',' + text.slice(0,15);
+        if (seen[key]) return;
+        seen[key] = true;
+        namedCells.push({
+          text,
+          left: relLeft,
+          top: relTop,
+          width: Math.round(r.width),
+          height: Math.round(r.height),
+          right: Math.round(r.right - tableRect.left),
+          bottom: Math.round(r.bottom - tableRect.top)
+        });
+      });
+      namedCells.sort((a,b) => Math.abs(a.top-b.top)>5 ? a.top-b.top : a.left-b.left);
 
       results.push({
         titleSpans,
-        allCellTexts: allCellTexts.slice(0, 30), // debug: first 30 cell texts
         tableWidth: Math.round(tableRect.width),
         tableHeight: Math.round(tableRect.height),
         colHeaders,
@@ -136,108 +118,76 @@ async function extractSlideGeometry(page) {
 }
 
 function parseSlideGeometry(slideData) {
-  const { titleSpans, tableWidth, tableHeight, colHeaders, dayHeaders, namedCells } = slideData;
+  const { titleSpans, tableHeight, colHeaders, dayHeaders, namedCells } = slideData;
 
-  if (!dayHeaders.length) {
-    console.log('  SKIP: no day headers found');
-    return null;
-  }
-  if (!colHeaders.length) {
-    console.log('  SKIP: no col headers found');
-    return null;
-  }
-  if (!namedCells.length) {
-    console.log('  SKIP: no named cells');
-    return null;
-  }
+  if (!dayHeaders.length) { console.log('  SKIP: no day headers'); return null; }
+  if (!colHeaders.length) { console.log('  SKIP: no col headers'); return null; }
+  if (!namedCells.length) { console.log('  SKIP: no named cells'); return null; }
 
   const week = extractWeekTitle(titleSpans);
 
   const schedule = {};
   dayHeaders.forEach(d => { schedule[d.dayName] = { date: d.date, staff: null, studentShifts: [] }; });
 
-  // Calibrate header height from day header bottom position
-  // Day headers are at the top, their bottom tells us where data starts
-  const dayHeaderBottom = Math.max(...dayHeaders.map(d => d.top)) + 60; // approx
-
-  // Find col header bottom to get data start more precisely
-  // Use 15% as fallback
-  const headerHeight = Math.max(dayHeaderBottom, tableHeight * 0.13);
+  // Estimate where data rows start — use bottom of day headers + col headers
+  const dayHeaderMaxTop = Math.max(...dayHeaders.map(d => d.top));
+  const headerHeight = dayHeaderMaxTop + (tableHeight * 0.06);
   const dataHeight = tableHeight - headerHeight;
   const slotHeight = dataHeight / 8;
 
-  console.log(`  tableH=${tableHeight} headerH=${Math.round(headerHeight)} slotH=${Math.round(slotHeight)}`);
+  console.log(`  tableH=${tableHeight} headerH=${Math.round(headerHeight)} slotH=${Math.round(slotHeight)} days=${dayHeaders.map(d=>d.dayName).join(',')} cols=${colHeaders.map(c=>c.role+'@'+c.left).join(',')}`);
 
-  function topToSlotIndex(relTop) {
-    const offset = relTop - headerHeight;
+  function topToSlotIndex(t) {
+    const offset = t - headerHeight;
     if (offset < 0) return 0;
     return Math.min(7, Math.floor(offset / slotHeight));
   }
 
-  function bottomToSlotIndex(relBottom) {
-    const offset = relBottom - headerHeight;
+  function bottomToSlotIndex(b) {
+    const offset = b - headerHeight;
     if (offset <= 0) return 0;
     return Math.min(7, Math.ceil(offset / slotHeight) - 1);
   }
 
   namedCells.forEach(cell => {
-    const cellCenterX = cell.left + cell.width / 2;
+    const cx = cell.left + cell.width / 2;
 
     // Match day
-    let matchedDay = dayHeaders.find(d => cellCenterX >= d.left && cellCenterX <= d.right);
-    if (!matchedDay) {
-      let minDist = Infinity;
+    let day = dayHeaders.find(d => cx >= d.left && cx <= d.right);
+    if (!day) {
+      let best = Infinity;
       dayHeaders.forEach(d => {
-        const c = (d.left + d.right) / 2;
-        const dist = Math.abs(cellCenterX - c);
-        if (dist < minDist) { minDist = dist; matchedDay = d; }
+        const dc = (d.left + d.right) / 2;
+        if (Math.abs(cx - dc) < best) { best = Math.abs(cx - dc); day = d; }
       });
     }
-    if (!matchedDay) return;
+    if (!day) return;
 
-    // Match col within this day
-    const dayLeft = matchedDay.left;
-    const dayRight = matchedDay.right;
+    // Match col within day
+    const dayCols = colHeaders
+      .filter(col => col.centerX >= day.left - 5 && col.centerX <= day.right + 5)
+      .sort((a,b) => a.left - b.left);
 
-    let matchedCol = colHeaders.find(col =>
-      cellCenterX >= col.left && cellCenterX <= col.right &&
-      col.centerX >= dayLeft - 5 && col.centerX <= dayRight + 5
-    );
-
-    if (!matchedCol) {
-      const dayCols = colHeaders
-        .filter(col => col.centerX >= dayLeft - 5 && col.centerX <= dayRight + 5)
-        .sort((a,b) => a.left - b.left);
-
-      if (dayCols.length === 1) {
-        matchedCol = dayCols[0];
-      } else if (dayCols.length > 1) {
-        const dayMidX = (dayLeft + dayRight) / 2;
-        matchedCol = cellCenterX <= dayMidX ? dayCols[0] : dayCols[dayCols.length - 1];
-      }
+    let col = dayCols.find(c => cx >= c.left && cx <= c.right);
+    if (!col && dayCols.length === 1) col = dayCols[0];
+    if (!col && dayCols.length > 1) {
+      const mid = (day.left + day.right) / 2;
+      col = cx <= mid ? dayCols[0] : dayCols[dayCols.length - 1];
     }
 
-    const role = matchedCol ? matchedCol.role : (cellCenterX < (matchedDay.left + matchedDay.right)/2 ? 'staff' : 'student');
+    const role = col ? col.role : (cx < (day.left + day.right) / 2 ? 'staff' : 'student');
+    const si = topToSlotIndex(cell.top);
+    const ei = bottomToSlotIndex(cell.bottom);
+    const startTime = TIME_SLOTS[si];
+    const endTime = ei < 7 ? TIME_SLOTS[ei + 1] : null;
 
-    const startIdx = topToSlotIndex(cell.top);
-    const endIdx = bottomToSlotIndex(cell.bottom);
-    const startTime = TIME_SLOTS[startIdx];
-    const endTime = endIdx < 7 ? TIME_SLOTS[endIdx + 1] : null;
-
-    console.log(`  "${cell.text.padEnd(22)}" day=${matchedDay.dayName.padEnd(10)} role=${role.padEnd(8)} top=${String(cell.top).padStart(3)} h=${String(cell.height).padStart(3)} slots=${startIdx}-${endIdx} (${startTime})`);
-
-    if (!schedule[matchedDay.dayName]) return;
+    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top} h=${cell.height} ${si}->${ei} ${startTime}`);
 
     if (role === 'staff') {
-      if (!schedule[matchedDay.dayName].staff) {
-        schedule[matchedDay.dayName].staff = cell.text;
-      }
+      if (!schedule[day.dayName].staff) schedule[day.dayName].staff = cell.text;
     } else {
-      const dup = schedule[matchedDay.dayName].studentShifts
-        .some(s => s.name === cell.text && s.startTime === startTime);
-      if (!dup) {
-        schedule[matchedDay.dayName].studentShifts.push({ startTime, endTime, name: cell.text });
-      }
+      const dup = schedule[day.dayName].studentShifts.some(s => s.name === cell.text && s.startTime === startTime);
+      if (!dup) schedule[day.dayName].studentShifts.push({ startTime, endTime, name: cell.text });
     }
   });
 
@@ -247,58 +197,53 @@ function parseSlideGeometry(slideData) {
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
-
-  console.log('Navigating to Canva...');
+  console.log('Navigating...');
   await page.goto(CANVA_URL, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForSelector('table', { timeout: 30000 });
   await page.waitForTimeout(2000);
 
   const totalPages = await page.evaluate(() => {
-    const counter = document.querySelector('[aria-valuemax]');
-    return counter ? parseInt(counter.getAttribute('aria-valuemax')) : 15;
+    const c = document.querySelector('[aria-valuemax]');
+    return c ? parseInt(c.getAttribute('aria-valuemax')) : 15;
   });
   console.log(`Total slides: ${totalPages}`);
 
   const allSlides = [];
-  const seen = new Set();
+  const seen = {};
 
-  async function collectSlide() {
+  async function collect() {
     await page.waitForTimeout(1500);
     const slides = await extractSlideGeometry(page);
     slides.forEach(s => {
-      const key = s.titleSpans.join('|').slice(0,80) + '|' + s.namedCells.slice(0,3).map(c=>c.text).join('|');
-      if (!seen.has(key) && s.namedCells.length > 0) {
-        seen.add(key);
+      const key = s.titleSpans.join('|').slice(0,80) + '|' + s.namedCells.slice(0,2).map(c=>c.text).join('|');
+      if (!seen[key] && s.namedCells.length > 0) {
+        seen[key] = true;
         allSlides.push(s);
-        console.log(`Captured: "${s.titleSpans.slice(0,2).join(' ').slice(0,60)}" | days=[${s.dayHeaders.map(d=>d.dayName).join(',')}] | cols=${s.colHeaders.length} | cells=${s.namedCells.length}`);
-        // Debug: show first 10 cell texts to understand structure
-        console.log(`  First cell texts: ${s.allCellTexts.slice(0,10).join(' | ')}`);
+        console.log(`Captured: "${s.titleSpans[0] ? s.titleSpans[0].slice(0,50) : '?'}" days=[${s.dayHeaders.map(d=>d.dayName).join(',')}] cols=${s.colHeaders.length} cells=${s.namedCells.length}`);
       }
     });
   }
 
-  await collectSlide();
+  await collect();
   for (let i = 1; i < totalPages; i++) {
-    const nextBtn = await page.$('[aria-label="Next page"]');
-    if (!nextBtn) break;
-    if (await nextBtn.getAttribute('aria-disabled') === 'true') break;
-    await nextBtn.click();
-    await collectSlide();
+    const btn = await page.$('[aria-label="Next page"]');
+    if (!btn || await btn.getAttribute('aria-disabled') === 'true') break;
+    await btn.click();
+    await collect();
   }
 
-  console.log(`\nTotal slides captured: ${allSlides.length}`);
-
-  const schedules = allSlides.map((s, i) => {
-    console.log(`\n--- Slide ${i+1}: ${s.titleSpans.slice(0,1).join(' ').slice(0,50)} ---`);
+  console.log(`\nSlides: ${allSlides.length}`);
+  const schedules = allSlides.map((s,i) => {
+    console.log(`\n--- Slide ${i+1} ---`);
     return parseSlideGeometry(s);
   }).filter(Boolean);
 
-  const seenWeeks = new Set();
+  const seenW = {};
   const unique = schedules.filter(s => {
     if (!s.week) return false;
-    const key = s.week.toLowerCase().replace(/\s+/g,'');
-    if (seenWeeks.has(key)) return false;
-    seenWeeks.add(key);
+    const k = s.week.toLowerCase().replace(/\s+/g,'');
+    if (seenW[k]) return false;
+    seenW[k] = true;
     return true;
   });
 
@@ -307,24 +252,21 @@ function parseSlideGeometry(slideData) {
     DAY_NAMES.forEach(day => {
       const d = s.schedule[day];
       if (!d) return;
-      const students = (d.studentShifts||[]).map(sh=>`${sh.name} ${sh.startTime}${sh.endTime?' until '+sh.endTime:'+'}`).join(', ')||'none';
-      lines.push(`  ${day} (${d.date}): Staff=${d.staff||'TBD'} | Students=${students}`);
+      const stu = (d.studentShifts||[]).map(sh=>`${sh.name} ${sh.startTime}${sh.endTime?' until '+sh.endTime:'+'}`).join(', ')||'none';
+      lines.push(`  ${day} (${d.date}): Staff=${d.staff||'TBD'} | Students=${stu}`);
     });
     return lines.join('\n');
   }).join('\n\n');
 
   console.log('\n=== SUMMARY ===\n' + summary);
 
-  // Always write valid schedule.json even if empty
-  const output = {
+  fs.writeFileSync('schedule.json', JSON.stringify({
     lastUpdated: new Date().toISOString(),
     source: CANVA_URL,
     totalWeeks: unique.length,
     schedules: unique,
     summary
-  };
-
-  fs.writeFileSync('schedule.json', JSON.stringify(output, null, 2));
-  console.log('\nschedule.json written.');
+  }, null, 2));
+  console.log('\nDone.');
   await browser.close();
 })();

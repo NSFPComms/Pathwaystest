@@ -141,39 +141,65 @@ function parseSlideGeometry(slideData) {
   const maxCellHeight = Math.max(...namedCells.map(c => c.height));
   const slotHeight = maxCellHeight / 8;
 
-  // From real HTML measurements: gap cell = 15.21px, full slot = 36.45px → ratio = 0.417
-  // Accept any empty cell between 25% and 65% of slotHeight as a half-hour gap
-  const halfSlotMin = slotHeight * 0.25;
-  const halfSlotMax = slotHeight * 0.65;
-
   function pixelToHours(px) {
     return (px - headerHeight) / slotHeight;
   }
 
-  function getAdjustedTop(cell) {
-    for (const e of emptyCells) {
-      const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
-      const buttsUp = Math.abs(e.bottom - cell.top) <= 2;
-      const isHalfSlot = e.height >= halfSlotMin && e.height <= halfSlotMax;
-      if (xOverlap && buttsUp && isHalfSlot) {
-        console.log('    ½hr gap above "' + cell.text + '": emptyH=' + e.height.toFixed(3) + ' → start from ' + e.top.toFixed(3));
-        return e.top;
+  // Half-hour detection via gap-splitting between consecutive cells in the same column.
+  // At Playwright scale (tableH=20, slotH=2), a half-hour gap (real: 15.21px)
+  // renders as exactly 1px = 0.5 slots. But it shows up as empty cells of h=2 (1 full slot)
+  // because Canva's table merges sub-pixel rows. Instead, we detect the gap BETWEEN
+  // consecutive named cells in the same x-column:
+  //   - gap = 1 slot (slotH): likely a half-hour gap — split it, each cell gets 0.5 slots
+  //   - gap = 0: cells are contiguous — no adjustment
+  //   - gap > 1 slot: real gap (e.g. lunch break) — no half-hour adjustment
+
+  const halfHourAdjustments = new Map(); // Maps cell → { top?, bottom? }
+
+  // Group cells by approximate x-center (same column = within 3px)
+  const colGroups = [];
+  namedCells.forEach(cell => {
+    const cx = cell.left + cell.width / 2;
+    let g = colGroups.find(g => Math.abs(g.cx - cx) < 3);
+    if (!g) { g = { cx, cells: [] }; colGroups.push(g); }
+    g.cells.push(cell);
+  });
+
+  colGroups.forEach(group => {
+    const sorted = group.cells.slice().sort((a,b) => a.top - b.top);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const curr = sorted[i];
+      const next = sorted[i+1];
+      const currBottom = curr.top + curr.height;
+      const gap = next.top - currBottom;
+      // A half-hour gap renders as exactly 1 slot (slotH) at Playwright scale.
+      // We only split it if an empty cell occupies that exact space — confirming
+      // it's a real structural gap, not just missing student coverage.
+      if (gap >= slotHeight * 0.4 && gap <= slotHeight * 1.2) {
+        // Verify: is there an empty cell that fills this exact gap?
+        const gapTop = currBottom;
+        const gapBot = next.top;
+        const hasEmptyFill = emptyCells.some(e => {
+          const xOverlap = e.right > curr.left + 1 && e.left < curr.right - 1;
+          const vertMatch = e.top >= gapTop - 0.5 && e.bottom <= gapBot + 0.5;
+          return xOverlap && vertMatch;
+        });
+        if (hasEmptyFill) {
+          const mid = currBottom + gap / 2;
+          console.log('  ½hr gap-split: "' + curr.text.trim() + '" end→' + mid.toFixed(2) + ' | "' + next.text.trim() + '" start→' + mid.toFixed(2));
+          halfHourAdjustments.set(curr, Object.assign(halfHourAdjustments.get(curr)||{}, { bottom: mid }));
+          halfHourAdjustments.set(next, Object.assign(halfHourAdjustments.get(next)||{}, { top: mid }));
+        }
       }
     }
-    return cell.top;
+  });
+
+  function getAdjustedTop(cell) {
+    return halfHourAdjustments.get(cell)?.top ?? cell.top;
   }
 
   function getAdjustedBottom(cell) {
-    for (const e of emptyCells) {
-      const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
-      const buttsDown = Math.abs(e.top - cell.bottom) <= 2;
-      const isHalfSlot = e.height >= halfSlotMin && e.height <= halfSlotMax;
-      if (xOverlap && buttsDown && isHalfSlot) {
-        console.log('    ½hr gap below "' + cell.text + '": emptyH=' + e.height.toFixed(3));
-        return e.bottom;
-      }
-    }
-    return cell.bottom;
+    return halfHourAdjustments.get(cell)?.bottom ?? cell.bottom;
   }
 
   console.log('  slotH=' + slotHeight.toFixed(3) + ' halfRange=[' + halfSlotMin.toFixed(3) + '-' + halfSlotMax.toFixed(3) + '] empty=' + emptyCells.length + ' heights=' + emptyCells.map(e=>e.height.toFixed(3)).join(','));

@@ -3,16 +3,14 @@ const fs = require('fs');
 
 const CANVA_URL = 'https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view';
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
-const TEAM_CODES = /^(OPS|URP|PHA|CPD|NSF|EXP)$/i;
 
-// Convert fractional hour offset (0-8) to time string
-// 0=9AM, 1=10AM, ... 8=5PM, 0.5=9:30AM, 4.5=1:30PM etc
-function offsetToTimeStr(offset) {
-  const totalMins = Math.round(offset * 60); // offset in hours from 9AM
+function offsetToTimeStr(hoursFrom9AM) {
+  // hoursFrom9AM: 0=9AM, 4=1PM, 4.5=1:30PM, 8=5PM
+  const totalMins = Math.round(hoursFrom9AM * 60);
   const hour = 9 + Math.floor(totalMins / 60);
   const mins = totalMins % 60;
   const ampm = hour >= 12 ? 'PM' : 'AM';
-  const h12 = hour > 12 ? hour - 12 : hour;
+  const h12 = hour > 12 ? hour - 12 : (hour === 12 ? 12 : hour);
   return mins === 0 ? `${h12}${ampm}` : `${h12}:${String(mins).padStart(2,'0')}${ampm}`;
 }
 
@@ -26,8 +24,6 @@ async function extractSlideGeometry(page) {
   return await page.evaluate(() => {
     const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
     const DAY_PATTERNS = [/monday/i,/tuesday/i,/wednesday/i,/thursday/i,/friday/i];
-
-    // Skip only structural labels — NOT team codes (PHA, OPS etc are valid data)
     const SKIP_RE = /^(staff|student\s*staff|2nd\s*floor|\d+(am|pm)\s*-\s*\d+(am|pm))/i;
 
     const results = [];
@@ -47,7 +43,7 @@ async function extractSlideGeometry(page) {
 
       const allCells = Array.from(table.querySelectorAll('td, th'));
 
-      // Col headers (STAFF / STUDENT STAFF)
+      // Col headers
       const colHeaders = allCells
         .filter(c => /^(staff|student\s*staff)$/i.test(c.innerText.replace(/\s+/g,' ').trim()))
         .map(c => {
@@ -56,8 +52,7 @@ async function extractSlideGeometry(page) {
             role: /student/i.test(c.innerText) ? 'student' : 'staff',
             left: Math.round(r.left - tableRect.left),
             right: Math.round(r.right - tableRect.left),
-            centerX: Math.round((r.left + r.right) / 2 - tableRect.left),
-            bottom: Math.round(r.bottom - tableRect.top)
+            centerX: Math.round((r.left + r.right) / 2 - tableRect.left)
           };
         }).sort((a,b) => a.left - b.left);
 
@@ -77,8 +72,6 @@ async function extractSlideGeometry(page) {
           date: dateM ? dateM[1].replace(/\s+/,' ').trim() : null,
           left: Math.round(r.left - tableRect.left),
           right: Math.round(r.right - tableRect.left),
-          top: Math.round(r.top - tableRect.top),
-          bottom: Math.round(r.bottom - tableRect.top)
         });
       });
       dayHeaders.sort((a,b) => a.left - b.left);
@@ -113,7 +106,6 @@ async function extractSlideGeometry(page) {
 
       results.push({
         titleSpans,
-        tableWidth: Math.round(tableRect.width),
         tableHeight: Math.round(tableRect.height),
         colHeaders,
         dayHeaders,
@@ -131,31 +123,22 @@ function parseSlideGeometry(slideData) {
   if (!dayHeaders.length || !colHeaders.length || !namedCells.length) return null;
 
   const week = extractWeekTitle(titleSpans);
-
   const schedule = {};
   dayHeaders.forEach(d => { schedule[d.dayName] = { date: d.date, staff: null, studentShifts: [] }; });
 
-  // Calibrate header height from actual col header bottom positions
-  // Col headers (STAFF/STUDENT STAFF) sit below day headers
-  // Their bottom edge is where data rows start
-  const colHeaderMaxBottom = Math.max(...colHeaders.map(c => c.bottom || 0));
-  const headerHeight = colHeaderMaxBottom > 0 ? colHeaderMaxBottom : Math.max(...dayHeaders.map(d => d.bottom || 0));
+  // Use minimum top of named cells as header height — this is where data actually starts
+  const headerHeight = Math.min(...namedCells.map(c => c.top));
   const dataHeight = tableHeight - headerHeight;
-  const slotHeight = dataHeight / 8; // 8 one-hour slots (9AM-5PM)
+  const slotHeight = dataHeight / 8; // 8 one-hour slots 9AM-5PM
 
-  console.log(`  tableH=${tableHeight} headerH=${headerHeight.toFixed(1)} slotH=${slotHeight.toFixed(2)}`);
+  console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(2)}`);
 
-  // Convert pixel position to fractional hour offset from 9AM
-  function pixelToHourOffset(pixelTop) {
-    const offset = pixelTop - headerHeight;
-    if (offset < 0) return 0;
-    return offset / slotHeight; // fractional hours from 9AM
+  function topToOffset(pixelTop) {
+    return Math.max(0, (pixelTop - headerHeight) / slotHeight);
   }
 
-  function pixelBottomToHourOffset(pixelBottom) {
-    const offset = pixelBottom - headerHeight;
-    if (offset <= 0) return 0;
-    return offset / slotHeight;
+  function bottomToOffset(pixelBottom) {
+    return Math.min(8, (pixelBottom - headerHeight) / slotHeight);
   }
 
   namedCells.forEach(cell => {
@@ -186,14 +169,12 @@ function parseSlideGeometry(slideData) {
 
     const role = col ? col.role : (cx < (day.left + day.right) / 2 ? 'staff' : 'student');
 
-    // Calculate precise start/end times using pixel geometry
-    const startOffset = pixelToHourOffset(cell.top);
-    const endOffset = pixelBottomToHourOffset(cell.bottom);
-
+    const startOffset = topToOffset(cell.top);
+    const endOffset = bottomToOffset(cell.bottom);
     const startTime = offsetToTimeStr(startOffset);
     const endTime = offsetToTimeStr(endOffset);
 
-    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top} h=${cell.height} start=${startTime} end=${endTime}`);
+    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top} h=${cell.height} ${startTime}-${endTime}`);
 
     if (!schedule[day.dayName]) return;
 
@@ -236,7 +217,7 @@ function parseSlideGeometry(slideData) {
       if (!seen[key] && s.namedCells.length > 0) {
         seen[key] = true;
         allSlides.push(s);
-        console.log(`Captured: days=[${s.dayHeaders.map(d=>d.dayName).join(',')}] cols=${s.colHeaders.length} cells=${s.namedCells.length} title="${s.titleSpans[0]||'?'}"`);
+        console.log(`Captured: days=[${s.dayHeaders.map(d=>d.dayName).join(',')}] cells=${s.namedCells.length}`);
       }
     });
   }
@@ -248,8 +229,6 @@ function parseSlideGeometry(slideData) {
     await btn.click();
     await collect();
   }
-
-  console.log(`\nSlides: ${allSlides.length}`);
 
   const schedules = allSlides.map((s,i) => {
     console.log(`\n--- Slide ${i+1} ---`);

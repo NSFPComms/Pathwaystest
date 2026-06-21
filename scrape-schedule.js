@@ -95,12 +95,12 @@ async function extractSlideGeometry(page) {
         namedCells.push({
           text,
           left: relLeft, top: relTop,
-          width: Math.round(r.width), height: Math.round(r.height),
-          right: Math.round(r.right - tableRect.left),
-          bottom: Math.round(r.bottom - tableRect.top)
+          width: r.width, height: r.height, // raw floats for accurate half-hour detection
+          right: r.right - tableRect.left,
+          bottom: r.bottom - tableRect.top
         });
       });
-      namedCells.sort((a,b) => Math.abs(a.top-b.top)>2 ? a.top-b.top : a.left-b.left);
+      namedCells.sort((a,b) => Math.abs(a.top-b.top)>1 ? a.top-b.top : a.left-b.left);
 
       // Empty cells — use raw getBoundingClientRect values (no rounding)
       // At Playwright's scaled viewport, a half-hour gap ~= slotH/2 ~= 1px
@@ -141,15 +141,18 @@ function parseSlideGeometry(slideData) {
   const schedule = {};
   dayHeaders.forEach(d => { schedule[d.dayName] = { date: d.date, staff: null, studentShifts: [] }; });
 
-  const headerHeight = Math.min(...namedCells.map(c => c.top));
-  const maxCellHeight = Math.max(...namedCells.map(c => c.height));
+  const headerHeight = Math.min(...namedCells.map(c => c.top)); // raw float
+  const maxCellHeight = Math.max(...namedCells.map(c => c.height)); // raw float
   const slotHeight = maxCellHeight / 8;
   // Use raw table pixel dimensions for half-slot detection
   // tableHeight=20 means slotH=2, halfSlot=1 — but emptyCells use raw floats
   // so compare against slotHeight directly
   const halfSlot = slotHeight / 2;
 
-  console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(2)} halfSlot=${halfSlot.toFixed(2)} emptyCells=${emptyCells.length}`);
+  console.log('  tableH=' + tableHeight + ' headerH=' + headerHeight.toFixed(3) + ' slotH=' + slotHeight.toFixed(3) + ' half=[' + halfSlotMin.toFixed(3) + '-' + halfSlotMax.toFixed(3) + '] emptyCells=' + emptyCells.length);
+  if (emptyCells.length > 0) console.log('  empty heights: ' + emptyCells.map(e => e.height.toFixed(3)).join(', '));
+  const namedHeights = [...new Set(namedCells.map(c => c.height.toFixed(3)))];
+  console.log('  named heights: ' + namedHeights.join(', '));
 
   function pixelToHours(px) {
     return (px - headerHeight) / slotHeight;
@@ -168,7 +171,7 @@ function parseSlideGeometry(slideData) {
       // x overlap: the empty cell must be in the same column
       const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
       // vertical: empty cell's bottom must be at or very near cell's top
-      const buttsUp = Math.abs(e.bottom - cell.top) <= 0.6;
+      const buttsUp = Math.abs(e.bottom - cell.top) <= 2.0; // generous tolerance for px rounding
       // height: must be roughly half a slot
       const isHalfSlot = e.height >= halfSlotMin && e.height <= halfSlotMax;
       if (xOverlap && buttsUp && isHalfSlot) {
@@ -182,7 +185,7 @@ function parseSlideGeometry(slideData) {
   function getAdjustedBottom(cell) {
     for (const e of emptyCells) {
       const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
-      const buttsDown = Math.abs(e.top - cell.bottom) <= 0.6;
+      const buttsDown = Math.abs(e.top - cell.bottom) <= 2.0;
       const isHalfSlot = e.height >= halfSlotMin && e.height <= halfSlotMax;
       if (xOverlap && buttsDown && isHalfSlot) {
         console.log('    half-hr gap BELOW "' + cell.text + '": emptyH=' + e.height.toFixed(3) + ' adjustedBottom=' + e.bottom.toFixed(3));

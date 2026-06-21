@@ -3,278 +3,218 @@ const fs = require('fs');
 
 const CANVA_URL = 'https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view';
 
-// Known staff members — any name matching one of these is STAFF, not student staff
-// Stored as lowercase for fuzzy matching
-const KNOWN_STAFF = [
-  'xu jiahong','li lina','garber andrew','grimmett branden','quach alex','wang rita',
-  'bangura amelia','march frank','brown tabitha','boyd michael','owens kendra',
-  'holst abby','oh tiffany','araya nydia','araya-stivers nydia','cox beverly',
-  'wrenn rapp diana','wrenn diana','diana wrenn','fisher natima','hollinger gregory',
-  'still anthony','mckelvy mick','almeida carmen','bazile tim','caraballo luz',
-  'magnanini luca','amanuel leah','harris katelyn','murat renoal','murat rey','rey murat',
-  'melton sheryl','dsouza natasha','friddle megan','laupert danielle','goode edmund',
-  'goode ed','ed goode','herold tricia','pak susan','chau kelly','cornwell don',
-  'don cornwell','riddock carol','carol riddock','waller asia','mccrary jessie',
-  'jessie mc crary','jessie mccrary','long amanda','tucker micah','micah tucker',
-  'bakhit naadia','murray jack','aguilera sandra','anderson steven','jahn tristen',
-  'tristen jahn','molee kim','hansen bridget','bridget hansen','gunnels bridgette',
-  'debarati roy','roy debarati','sapna david','david sapna','diana wrenn rapp',
-  'tim bazile','amanda long','abby holst','tiffany oh','natima fisher','kendra owens',
-  'michael boyd','alex quach','katelyn harris','megan friddle','carol riddock',
-  'amelia bangura','tricia herold','ed goode','don cornwell','micah tucker',
-  'kelshay toomer','toomer kelshay','rey murat','renoal murat','sandra aguilera',
-  'beth white','white beth','nydia araya','marshall tucker','tucker marshall',
-  'aj scott','scott aj','bridget hansen','jessie mc crary','kendra owens',
-  'kelshay toomer','pha staff','ops staff'
-].map(n => n.toLowerCase());
-
-const TEAM_CODES = ['OPS','URP','PHA','NSF','EXP','CPD'];
-const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
-const DAY_PATTERNS = [/monday/i,/tuesday/i,/wednesday/i,/thursday/i,/friday/i];
-
-const TIME_TO_ORDER = {
-  '9AM - 10AM':0,'10AM - 11AM':1,'11AM - 12PM':2,
-  '12PM - 1PM':3,'1PM - 2PM':4,'2PM - 3PM':5,
-  '3PM - 4PM':6,'4PM - 5PM':7
-};
-
-function isTimeSlot(t) {
-  return /^\d+\s*(AM|PM)\s*-\s*\d+\s*(AM|PM)$/i.test((t||'').trim());
-}
-
-function cleanName(raw) {
-  return raw.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\s+/g, ' ').trim();
-}
-
-function isKnownStaff(name) {
-  if (!name) return false;
-  const n = name.toLowerCase().replace(/\s+/g,' ').trim();
-  return KNOWN_STAFF.some(s => n.includes(s) || s.includes(n));
-}
-
-function isTeamCode(name) {
-  return TEAM_CODES.includes((name||'').trim().toUpperCase());
-}
-
-function isHoliday(name) {
-  const n = (name||'').toLowerCase();
-  return n.includes('closed') || n.includes('memorial day') ||
-         n.includes('juneteenth') || n.includes('independence day') ||
-         n.includes('university closed');
-}
-
-function isSkipToken(token) {
-  const t = (token||'').toLowerCase().replace(/\s+/g,'');
-  if (['2ndfloor','floor','staff','studentstaff'].includes(t)) return true;
-  if (DAY_PATTERNS.some(p => p.test(token))) return true;
-  if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*\d+/i.test((token||'').trim())) return true;
-  if (/^\(.*\)$/.test((token||'').trim())) return true;
-  return false;
-}
-
-function isName(token) {
-  const t = (token||'').trim();
-  if (!t || t.length < 2) return false;
-  if (isTimeSlot(t)) return false;
-  if (isSkipToken(t)) return false;
-  return /[a-zA-Z]{2,}/.test(t);
-}
+const TIME_SLOTS = [
+  '9AM - 10AM','10AM - 11AM','11AM - 12PM',
+  '12PM - 1PM','1PM - 2PM','2PM - 3PM',
+  '3PM - 4PM','4PM - 5PM'
+];
 
 function extractWeekTitle(titleSpans) {
   const joined = titleSpans.join(' ');
   const m = joined.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d+)\s*[-–]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d+,?\s*\d{4})/i);
-  if (m) return m[0].trim();
-  return null;
+  return m ? m[0].trim() : null;
 }
 
-function parseBlock(tableRows, titleSpans) {
-  if (!tableRows || tableRows.length < 3) return null;
-
-  // Find day header row and sub-header row
-  let dayHeaderRowIdx = -1;
-  let subHeaderRowIdx = -1;
-
-  for (let i = 0; i < Math.min(tableRows.length, 5); i++) {
-    const row = tableRows[i];
-    const hasDays = row.some(c => DAY_PATTERNS.some(p => p.test(c)));
-    const hasSubHeaders = row.some(c => {
-      const t = (c||'').toLowerCase().replace(/\s+/g,'');
-      return t === 'staff' || t === 'studentstaff';
-    });
-    if (hasDays && dayHeaderRowIdx === -1) dayHeaderRowIdx = i;
-    if (hasSubHeaders && subHeaderRowIdx === -1) subHeaderRowIdx = i;
-  }
-
-  if (subHeaderRowIdx === -1 || dayHeaderRowIdx === -1) return null;
-
-  // Extract days from day header row
-  const days = [];
-  tableRows[dayHeaderRowIdx].forEach(cell => {
-    DAY_NAMES.forEach((day, di) => {
-      if (DAY_PATTERNS[di].test(cell) && !days.find(d => d.name === day)) {
-        const dateM = cell.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+)/i);
-        days.push({ name: day, date: dateM ? dateM[1].replace(/\s+/,' ').trim() : null });
-      }
-    });
-  });
-
-  if (!days.length) return null;
-
-  // Build column map from sub-header row
-  // Each cell is 'staff', 'student', or skip (the '2ND FLOOR' label cell)
-  const subRow = tableRows[subHeaderRowIdx];
-  const colMap = []; // {dayName, date, role}
-  let dayIdx = 0;
-  let staffCountForDay = 0;
-
-  subRow.forEach(cell => {
-    const t = (cell||'').toLowerCase().replace(/\s+/g,'');
-    if (t === 'staff') {
-      if (days[dayIdx]) {
-        colMap.push({ dayName: days[dayIdx].name, date: days[dayIdx].date, role: 'staff' });
-        staffCountForDay++;
-      }
-    } else if (t === 'studentstaff') {
-      if (days[dayIdx]) {
-        colMap.push({ dayName: days[dayIdx].name, date: days[dayIdx].date, role: 'student' });
-        // After student staff col, move to next day
-        dayIdx++;
-        staffCountForDay = 0;
-      }
-    }
-  });
-
-  if (!colMap.length) return null;
-
-  // Parse data rows — track current value per column (empty cell = rowspan, keep previous)
-  const dataRows = tableRows.slice(subHeaderRowIdx + 1);
-  const colCurrent = new Array(colMap.length).fill(null);
-  const colStartTime = new Array(colMap.length).fill(null);
-  const completedShifts = [];
-  let currentTime = null;
-
-  dataRows.forEach(row => {
-    // First cell may be a time slot label or empty
-    let dataStartIdx = 0;
-    if (isTimeSlot(row[0])) {
-      currentTime = row[0].trim();
-      dataStartIdx = 1;
-    } else if (!row[0] || row[0].trim() === '') {
-      dataStartIdx = 1;
-    } else {
-      // First cell might be a time in some rows
-      dataStartIdx = 1;
-    }
-
-    if (!currentTime) return;
-
-    const dataCells = row.slice(dataStartIdx);
-
-    for (let col = 0; col < colMap.length; col++) {
-      const cell = (dataCells[col] || '').trim();
-
-      if (cell && isName(cell)) {
-        const name = cleanName(cell);
-        // End previous occupant
-        if (colCurrent[col] && colCurrent[col] !== name) {
-          completedShifts.push({
-            ...colMap[col],
-            name: colCurrent[col],
-            startTime: colStartTime[col],
-            endTime: currentTime
-          });
-          colCurrent[col] = name;
-          colStartTime[col] = currentTime;
-        } else if (!colCurrent[col]) {
-          colCurrent[col] = name;
-          colStartTime[col] = currentTime;
-        }
-        // If same name continues, do nothing (rowspan)
-      }
-      // Empty cell = previous value continues
-    }
-  });
-
-  // Close remaining
-  for (let col = 0; col < colMap.length; col++) {
-    if (colCurrent[col]) {
-      completedShifts.push({
-        ...colMap[col],
-        name: colCurrent[col],
-        startTime: colStartTime[col],
-        endTime: null
-      });
-    }
-  }
-
-  // Build schedule — use known staff list to correct any misassignments
-  const schedule = {};
-  days.forEach(d => { schedule[d.name] = { date: d.date, staff: null, studentShifts: [] }; });
-
-  completedShifts.forEach(shift => {
-    if (!schedule[shift.dayName]) return;
-    const name = shift.name;
-
-    // Override role based on known staff list
-    let role = shift.role;
-    if (isHoliday(name)) {
-      // Holidays go on the staff line for display
-      role = 'staff';
-    } else if (isKnownStaff(name) || isTeamCode(name)) {
-      role = 'staff';
-    } else {
-      role = 'student';
-    }
-
-    if (role === 'staff') {
-      // Only set staff if not already set, or override if this is a better match
-      if (!schedule[shift.dayName].staff) {
-        schedule[shift.dayName].staff = name;
-      }
-    } else {
-      // Avoid duplicate student shifts
-      const alreadyAdded = schedule[shift.dayName].studentShifts
-        .some(s => s.name === name && s.startTime === shift.startTime);
-      if (!alreadyAdded) {
-        schedule[shift.dayName].studentShifts.push({
-          startTime: shift.startTime,
-          endTime: shift.endTime,
-          name: name
-        });
-      }
-    }
-  });
-
-  return { week: extractWeekTitle(titleSpans), schedule };
-}
-
-async function extractCurrentSlide(page) {
+async function extractSlideGeometry(page) {
   return await page.evaluate(() => {
+    const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+    const DAY_PATTERNS = [/monday/i,/tuesday/i,/wednesday/i,/thursday/i,/friday/i];
+    const SKIP_RE = /^(staff|student\s*staff|2nd\s*floor|ops|urp|pha|cpd|nsf|exp|open\s*shift|monday|tuesday|wednesday|thursday|friday|\d+(am|pm)\s*-\s*\d+(am|pm))/i;
+
     const results = [];
     const panes = document.querySelectorAll('._mXnjA');
+
     panes.forEach(pane => {
       if (pane.getAttribute('aria-hidden') === 'true') return;
+
       const titleSpans = Array.from(pane.querySelectorAll('p._28USrA span.a_GcMg'))
         .map(s => s.innerText.trim()).filter(t => t.length > 1);
-      const tables = pane.querySelectorAll('table');
-      tables.forEach(table => {
-        const rows = Array.from(table.querySelectorAll('tr'));
-        const tableRows = [];
-        rows.forEach(row => {
-          const cells = Array.from(row.querySelectorAll('td'));
-          if (!cells.length) return;
-          tableRows.push(cells.map(c => c.innerText.replace(/\s+/g,' ').trim()));
-        });
-        if (tableRows.length > 2) results.push({ titleSpans, tableRows });
+
+      const table = pane.querySelector('table');
+      if (!table) return;
+
+      const tableRect = table.getBoundingClientRect();
+      if (tableRect.height < 10) return;
+
+      const allTds = Array.from(table.querySelectorAll('td'));
+
+      // Col headers (STAFF / STUDENT STAFF)
+      const colHeaders = allTds
+        .filter(td => /^(staff|student\s*staff)$/i.test(td.innerText.replace(/\s+/g,' ').trim()))
+        .map(td => {
+          const r = td.getBoundingClientRect();
+          return {
+            role: /student/i.test(td.innerText) ? 'student' : 'staff',
+            left: Math.round(r.left - tableRect.left),
+            right: Math.round(r.right - tableRect.left),
+            centerX: Math.round((r.left + r.right) / 2 - tableRect.left)
+          };
+        }).sort((a,b) => a.left - b.left);
+
+      // Day headers
+      const seenDays = new Set();
+      const dayHeaders = allTds
+        .filter(td => DAY_PATTERNS.some(p => p.test(td.innerText)))
+        .map(td => {
+          const r = td.getBoundingClientRect();
+          const text = td.innerText.replace(/\s+/g,' ').trim();
+          let dayName = null;
+          DAY_NAMES.forEach((d,i) => { if (DAY_PATTERNS[i].test(text)) dayName = d; });
+          const dateM = text.match(/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+)/i);
+          return {
+            dayName,
+            date: dateM ? dateM[1].replace(/\s+/,' ').trim() : null,
+            left: Math.round(r.left - tableRect.left),
+            right: Math.round(r.right - tableRect.left)
+          };
+        })
+        .filter(d => d.dayName && !seenDays.has(d.dayName) && !seenDays.add(d.dayName))
+        .sort((a,b) => a.left - b.left);
+
+      // Named cells
+      const seen = new Set();
+      const namedCells = allTds
+        .filter(td => {
+          const text = td.innerText.replace(/\s+/g,' ').trim();
+          if (!text || text.length < 2) return false;
+          if (SKIP_RE.test(text)) return false;
+          if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+/i.test(text)) return false;
+          if (/^\(/.test(text)) return false;
+          return true;
+        })
+        .map(td => {
+          const r = td.getBoundingClientRect();
+          const text = td.innerText.replace(/\s+/g,' ').trim();
+          const relLeft = Math.round(r.left - tableRect.left);
+          const relTop = Math.round(r.top - tableRect.top);
+          const key = relLeft + ',' + relTop + ',' + text.slice(0,15);
+          if (seen.has(key)) return null;
+          seen.add(key);
+          return {
+            text,
+            left: relLeft,
+            top: relTop,
+            width: Math.round(r.width),
+            height: Math.round(r.height),
+            right: Math.round(r.right - tableRect.left),
+            bottom: Math.round(r.bottom - tableRect.top)
+          };
+        })
+        .filter(Boolean)
+        .sort((a,b) => Math.abs(a.top-b.top)>5 ? a.top-b.top : a.left-b.left);
+
+      results.push({
+        titleSpans,
+        tableWidth: Math.round(tableRect.width),
+        tableHeight: Math.round(tableRect.height),
+        colHeaders,
+        dayHeaders,
+        namedCells
       });
     });
+
     return results;
   });
+}
+
+function parseSlideGeometry(slideData) {
+  const { titleSpans, tableWidth, tableHeight, colHeaders, dayHeaders, namedCells } = slideData;
+  if (!dayHeaders.length || !colHeaders.length || !namedCells.length) return null;
+
+  const week = extractWeekTitle(titleSpans);
+
+  const schedule = {};
+  dayHeaders.forEach(d => { schedule[d.dayName] = { date: d.date, staff: null, studentShifts: [] }; });
+
+  // Estimate header height from where the col headers sit
+  // Data area starts after the col header row bottom
+  // We'll approximate: find the lowest col header bottom
+  // Since we don't have bottom of colHeaders easily, use 15% fallback
+  const headerFraction = 0.155;
+  const headerHeight = tableHeight * headerFraction;
+  const dataHeight = tableHeight - headerHeight;
+  const slotHeight = dataHeight / 8;
+
+  function topToSlotIndex(relTop) {
+    const offset = relTop - headerHeight;
+    if (offset < 0) return 0;
+    return Math.min(7, Math.floor(offset / slotHeight));
+  }
+
+  function bottomToSlotIndex(relBottom) {
+    const offset = relBottom - headerHeight;
+    if (offset <= 0) return 0;
+    return Math.min(7, Math.round(offset / slotHeight) - 1);
+  }
+
+  namedCells.forEach(cell => {
+    const cellCenterX = cell.left + cell.width / 2;
+
+    // Match day by x overlap
+    let matchedDay = dayHeaders.find(d => cellCenterX >= d.left && cellCenterX <= d.right);
+    if (!matchedDay) {
+      // closest day
+      let minDist = Infinity;
+      dayHeaders.forEach(d => {
+        const c = (d.left + d.right) / 2;
+        if (Math.abs(cellCenterX - c) < minDist) { minDist = Math.abs(cellCenterX - c); matchedDay = d; }
+      });
+    }
+    if (!matchedDay) return;
+
+    // Match col header by x overlap within this day's range
+    let matchedCol = colHeaders.find(col =>
+      cellCenterX >= col.left && cellCenterX <= col.right &&
+      col.centerX >= matchedDay.left && col.centerX <= matchedDay.right
+    );
+
+    if (!matchedCol) {
+      // Find col headers belonging to this day, pick closest
+      const dayCols = colHeaders
+        .filter(col => col.centerX >= matchedDay.left && col.centerX <= matchedDay.right)
+        .sort((a,b) => a.left - b.left);
+
+      if (dayCols.length === 1) {
+        matchedCol = dayCols[0];
+      } else if (dayCols.length > 1) {
+        // Left col = staff, right col = student (per design)
+        const dayMidX = (matchedDay.left + matchedDay.right) / 2;
+        matchedCol = cellCenterX < dayMidX ? dayCols[0] : dayCols[dayCols.length - 1];
+      }
+    }
+
+    const role = matchedCol ? matchedCol.role : 'staff';
+
+    const startSlotIdx = topToSlotIndex(cell.top);
+    const endSlotIdx = bottomToSlotIndex(cell.bottom);
+    const startTime = TIME_SLOTS[startSlotIdx];
+    // End time: the slot AFTER the last covered slot
+    const endTime = endSlotIdx < 7 ? TIME_SLOTS[endSlotIdx + 1] : null;
+
+    console.log(`  "${cell.text.padEnd(25)}" day=${matchedDay.dayName.padEnd(10)} role=${role.padEnd(8)} h=${cell.height} startSlot=${startSlotIdx}(${startTime}) endSlot=${endSlotIdx}`);
+
+    if (!schedule[matchedDay.dayName]) return;
+
+    if (role === 'staff') {
+      if (!schedule[matchedDay.dayName].staff) {
+        schedule[matchedDay.dayName].staff = cell.text;
+      }
+    } else {
+      const dup = schedule[matchedDay.dayName].studentShifts
+        .some(s => s.name === cell.text && s.startTime === startTime);
+      if (!dup) {
+        schedule[matchedDay.dayName].studentShifts.push({ startTime, endTime, name: cell.text });
+      }
+    }
+  });
+
+  return { week, schedule };
 }
 
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
+
   console.log('Navigating to Canva...');
   await page.goto(CANVA_URL, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForSelector('table', { timeout: 30000 });
@@ -286,18 +226,18 @@ async function extractCurrentSlide(page) {
   });
   console.log(`Total slides: ${totalPages}`);
 
-  const allRaw = [];
+  const allSlides = [];
   const seen = new Set();
 
   async function collectSlide() {
     await page.waitForTimeout(1500);
-    const raw = await extractCurrentSlide(page);
-    raw.forEach(r => {
-      const key = r.tableRows.slice(0,3).map(row => row.join('|')).join('||').slice(0,120);
-      if (!seen.has(key)) {
+    const slides = await extractSlideGeometry(page);
+    slides.forEach(s => {
+      const key = s.titleSpans.slice(0,2).join('|') + '|' + s.namedCells.slice(0,3).map(c=>c.text).join('|');
+      if (!seen.has(key) && s.namedCells.length > 0) {
         seen.add(key);
-        allRaw.push(r);
-        console.log(`  Captured: ${r.titleSpans.slice(0,2).join(' ') || '(no title)'}`);
+        allSlides.push(s);
+        console.log(`Captured: ${s.titleSpans.slice(0,2).join(' ')} | days=${s.dayHeaders.map(d=>d.dayName).join(',')} | cols=${s.colHeaders.map(c=>c.role+'@'+c.left).join(',')}`);
       }
     });
   }
@@ -311,22 +251,44 @@ async function extractCurrentSlide(page) {
     await collectSlide();
   }
 
-  console.log(`\nTotal unique tables: ${allRaw.length}`);
-  const schedules = allRaw.map(r => parseBlock(r.tableRows, r.titleSpans)).filter(Boolean);
+  console.log(`\nTotal slides: ${allSlides.length}`);
 
-  const summary = schedules.filter(s => s.week).map(s => {
+  const schedules = allSlides.map(s => {
+    console.log(`\n--- ${s.titleSpans.slice(0,2).join(' ')} ---`);
+    return parseSlideGeometry(s);
+  }).filter(Boolean);
+
+  // Deduplicate
+  const seenWeeks = new Set();
+  const unique = schedules.filter(s => {
+    if (!s.week) return false;
+    const key = s.week.toLowerCase().replace(/\s+/g,'');
+    if (seenWeeks.has(key)) return false;
+    seenWeeks.add(key);
+    return true;
+  });
+
+  const summary = unique.map(s => {
     const lines = [`Week of ${s.week}:`];
     ['Monday','Tuesday','Wednesday','Thursday','Friday'].forEach(day => {
       const d = s.schedule[day];
       if (!d) return;
-      lines.push(`  ${day} (${d.date}): Staff=${d.staff||'TBD'} | Students=${(d.studentShifts||[]).map(sh=>`${sh.name} ${sh.startTime}`).join(', ')||'none'}`);
+      const students = (d.studentShifts||[]).map(sh => `${sh.name} ${sh.startTime}${sh.endTime?' until '+sh.endTime:'+'}`).join(', ') || 'none';
+      lines.push(`  ${day} (${d.date}): Staff=${d.staff||'TBD'} | Students=${students}`);
     });
     return lines.join('\n');
   }).join('\n\n');
 
-  const output = { lastUpdated: new Date().toISOString(), source: CANVA_URL, totalWeeks: schedules.length, schedules, summary };
-  fs.writeFileSync('schedule.json', JSON.stringify(output, null, 2));
-  console.log('\nschedule.json written.\n');
-  console.log(summary);
+  console.log('\n=== SUMMARY ===\n' + summary);
+
+  fs.writeFileSync('schedule.json', JSON.stringify({
+    lastUpdated: new Date().toISOString(),
+    source: CANVA_URL,
+    totalWeeks: unique.length,
+    schedules: unique,
+    summary
+  }, null, 2));
+
+  console.log('\nschedule.json written.');
   await browser.close();
 })();

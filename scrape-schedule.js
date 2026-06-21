@@ -5,7 +5,8 @@ const CANVA_URL = 'https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttY
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 
 function offsetToTimeStr(hoursFrom9AM) {
-  const totalMins = Math.round(hoursFrom9AM * 30) * 2; // snap to nearest 30 mins
+  // Snap to nearest 30 minutes
+  const totalMins = Math.round(hoursFrom9AM * 2) * 30;
   const hour = 9 + Math.floor(totalMins / 60);
   const mins = totalMins % 60;
   const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -75,47 +76,54 @@ async function extractSlideGeometry(page) {
       });
       dayHeaders.sort((a,b) => a.left - b.left);
 
-      // Named cells + empty data cells (for half-hour gap detection)
-      const seenKeys = {};
+      // Named cells (unchanged from working version)
+      const seenNamed = {};
       const namedCells = [];
-      const emptyCells = []; // cells with no text but in the data area
-
       allCells.forEach(c => {
         const text = c.innerText.replace(/\s+/g,' ').trim();
+        if (!text || text.length < 2) return;
+        if (SKIP_RE.test(text)) return;
+        if (DAY_PATTERNS.some(p => p.test(text))) return;
+        if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+/i.test(text)) return;
+        if (/^\(/.test(text)) return;
+        const r = c.getBoundingClientRect();
+        const relLeft = Math.round(r.left - tableRect.left);
+        const relTop = Math.round(r.top - tableRect.top);
+        const key = relLeft + ',' + relTop + ',' + text.slice(0,15);
+        if (seenNamed[key]) return;
+        seenNamed[key] = true;
+        namedCells.push({
+          text,
+          left: relLeft, top: relTop,
+          width: Math.round(r.width), height: Math.round(r.height),
+          right: Math.round(r.right - tableRect.left),
+          bottom: Math.round(r.bottom - tableRect.top)
+        });
+      });
+      namedCells.sort((a,b) => Math.abs(a.top-b.top)>2 ? a.top-b.top : a.left-b.left);
+
+      // Empty cells — SEPARATE pass, only cells with truly no text content
+      // and that are in the data area (below header rows)
+      const seenEmpty = {};
+      const emptyCells = [];
+      allCells.forEach(c => {
+        const text = c.innerText.replace(/\s+/g,' ').trim();
+        if (text) return; // must be empty
         const r = c.getBoundingClientRect();
         const relLeft = Math.round(r.left - tableRect.left);
         const relTop = Math.round(r.top - tableRect.top);
         const relH = Math.round(r.height);
         const relW = Math.round(r.width);
-
-        // Skip header cells and tiny/zero-size cells
-        if (relH < 3 || relW < 5) return;
-
-        const key = relLeft + ',' + relTop + ',' + text.slice(0,15);
-        if (seenKeys[key]) return;
-        seenKeys[key] = true;
-
-        if (!text || SKIP_RE.test(text) || DAY_PATTERNS.some(p => p.test(text)) ||
-            /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*\d+/i.test(text) ||
-            /^\(/.test(text)) {
-          // Could be an empty data cell — capture if it's in the data area
-          // We'll filter by position later
-          if (!text) {
-            emptyCells.push({ left: relLeft, top: relTop, width: relW, height: relH,
-              right: Math.round(r.right - tableRect.left), bottom: Math.round(r.bottom - tableRect.top) });
-          }
-          return;
-        }
-
-        namedCells.push({
-          text,
+        if (relH < 3 || relW < 5) return; // skip degenerate cells
+        const key = relLeft + ',' + relTop + ',' + relH;
+        if (seenEmpty[key]) return;
+        seenEmpty[key] = true;
+        emptyCells.push({
           left: relLeft, top: relTop, width: relW, height: relH,
           right: Math.round(r.right - tableRect.left),
           bottom: Math.round(r.bottom - tableRect.top)
         });
       });
-
-      namedCells.sort((a,b) => Math.abs(a.top-b.top)>2 ? a.top-b.top : a.left-b.left);
 
       results.push({ titleSpans, tableHeight: Math.round(tableRect.height), colHeaders, dayHeaders, namedCells, emptyCells });
     });
@@ -134,53 +142,41 @@ function parseSlideGeometry(slideData) {
 
   const headerHeight = Math.min(...namedCells.map(c => c.top));
   const maxCellHeight = Math.max(...namedCells.map(c => c.height));
-  const slotHeight = maxCellHeight / 8; // 8 one-hour slots (9AM-5PM)
+  const slotHeight = maxCellHeight / 8;
   const halfSlot = slotHeight / 2;
 
-  console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(2)} halfSlot=${halfSlot.toFixed(2)}`);
+  console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(2)} halfSlot=${halfSlot.toFixed(2)} emptyCells=${emptyCells.length}`);
 
   function pixelToHours(px) {
     return (px - headerHeight) / slotHeight;
   }
 
-  // For a named cell, check if there's an empty cell directly above it
-  // in the same x-column with height ~= halfSlot. If so, the real start
-  // is at the TOP of that empty cell, not the top of the named cell.
-  function getAdjustedStartTop(cell) {
-    const tolerance = slotHeight * 0.35; // 35% tolerance for half-slot match
-    const above = emptyCells.filter(e => {
-      // Empty cell must be in roughly the same x range
+  // Check for empty half-slot cell directly above a named cell
+  function getAdjustedTop(cell) {
+    const tolerance = slotHeight * 0.4;
+    for (const e of emptyCells) {
       const xOverlap = e.left < cell.right - 2 && e.right > cell.left + 2;
-      // Empty cell must end right where the named cell starts (within 3px)
       const buttsUp = Math.abs(e.bottom - cell.top) <= 3;
-      // Height should be close to a half-slot
       const isHalfSlot = Math.abs(e.height - halfSlot) < tolerance;
-      return xOverlap && buttsUp && isHalfSlot;
-    });
-
-    if (above.length > 0) {
-      // Use the top of the empty cell as the real start
-      const emptyCell = above[0];
-      console.log(`    Half-hour gap detected above "${cell.text}": emptyTop=${emptyCell.top} h=${emptyCell.height} → start from empty top`);
-      return emptyCell.top;
+      if (xOverlap && buttsUp && isHalfSlot) {
+        console.log(`    ½hr gap above "${cell.text}": emptyTop=${e.top} h=${e.height} → start shifts earlier`);
+        return e.top;
+      }
     }
     return cell.top;
   }
 
-  // Similarly check if there's an empty cell directly below (for early endings)
-  function getAdjustedEndBottom(cell) {
-    const tolerance = slotHeight * 0.35;
-    const below = emptyCells.filter(e => {
+  // Check for empty half-slot cell directly below a named cell
+  function getAdjustedBottom(cell) {
+    const tolerance = slotHeight * 0.4;
+    for (const e of emptyCells) {
       const xOverlap = e.left < cell.right - 2 && e.right > cell.left + 2;
       const buttsDown = Math.abs(e.top - cell.bottom) <= 3;
       const isHalfSlot = Math.abs(e.height - halfSlot) < tolerance;
-      return xOverlap && buttsDown && isHalfSlot;
-    });
-
-    if (below.length > 0) {
-      const emptyCell = below[0];
-      console.log(`    Half-hour gap detected below "${cell.text}": emptyBottom=${emptyCell.bottom} → end at empty bottom`);
-      return emptyCell.bottom;
+      if (xOverlap && buttsDown && isHalfSlot) {
+        console.log(`    ½hr gap below "${cell.text}": emptyBottom=${e.bottom} h=${e.height} → end shifts later`);
+        return e.bottom;
+      }
     }
     return cell.bottom;
   }
@@ -211,16 +207,12 @@ function parseSlideGeometry(slideData) {
 
     const role = col ? col.role : (cx < (day.left + day.right) / 2 ? 'staff' : 'student');
 
-    // Adjust for half-hour gaps
-    const adjustedTop = getAdjustedStartTop(cell);
-    const adjustedBottom = getAdjustedEndBottom(cell);
+    const adjTop = getAdjustedTop(cell);
+    const adjBottom = getAdjustedBottom(cell);
+    const startTime = offsetToTimeStr(pixelToHours(adjTop));
+    const endTime = offsetToTimeStr(pixelToHours(adjBottom));
 
-    const startHours = pixelToHours(adjustedTop);
-    const endHours = pixelToHours(adjustedBottom);
-    const startTime = offsetToTimeStr(startHours);
-    const endTime = offsetToTimeStr(endHours);
-
-    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top}(adj=${adjustedTop}) h=${cell.height} ${startTime}-${endTime}`);
+    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top}→${adjTop} bot=${cell.bottom}→${adjBottom} ${startTime}-${endTime}`);
 
     if (!schedule[day.dayName]) return;
 
@@ -273,6 +265,7 @@ function parseSlideGeometry(slideData) {
     await collect();
   }
 
+  console.log(`\nTotal slides: ${allSlides.length}`);
   const schedules = allSlides.map((s,i) => {
     console.log(`\n--- Slide ${i+1} ---`);
     return parseSlideGeometry(s);

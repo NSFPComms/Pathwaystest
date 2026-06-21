@@ -102,34 +102,30 @@ async function extractSlideGeometry(page) {
       });
       namedCells.sort((a,b) => Math.abs(a.top-b.top)>2 ? a.top-b.top : a.left-b.left);
 
-      // Empty cells — use raw (unrounded) heights to detect half-slot gaps
-      // These cells have no text but exist as spacer rows in the Canva table
+      // Empty cells — use raw getBoundingClientRect values (no rounding)
+      // At Playwright's scaled viewport, a half-hour gap ~= slotH/2 ~= 1px
+      // We must accept ANY non-zero height
       const seenEmpty = {};
       const emptyCells = [];
       allCells.forEach(c => {
         const text = c.innerText.replace(/\s+/g,' ').trim();
-        if (text) return; // skip cells with any text
+        if (text) return;
         const r = c.getBoundingClientRect();
-        // Use raw floats for height comparison, round position for key
-        const relLeft = Math.round(r.left - tableRect.left);
-        const relTop = Math.round(r.top - tableRect.top);
-        const relH = r.height; // RAW float, not rounded
-        const relW = Math.round(r.width);
-        if (relH < 0.5 || relW < 3) return; // skip truly zero-size cells
-        const key = relLeft + ',' + relTop + ',' + Math.round(relH*10);
+        if (r.height <= 0 || r.width <= 0) return; // truly zero — skip
+        const relLeft = r.left - tableRect.left;
+        const relTop = r.top - tableRect.top;
+        const key = Math.round(relLeft) + ',' + Math.round(relTop) + ',' + Math.round(r.height * 100);
         if (seenEmpty[key]) return;
         seenEmpty[key] = true;
         emptyCells.push({
-          left: relLeft, top: relTop, width: relW,
-          height: relH, // raw float
-          right: Math.round(r.right - tableRect.left),
-          bottom: r.bottom - tableRect.top // raw float
+          left: relLeft, top: relTop,
+          width: r.width, height: r.height,
+          right: r.right - tableRect.left,
+          bottom: r.bottom - tableRect.top
         });
       });
-      // DEBUG: log empty cell count and sample
-      const emptyAboveMin = emptyCells.filter(e => e.height > 0.5);
 
-      console.log('DEBUG emptyCells found: ' + emptyCells.length + ' sample heights: ' + emptyCells.slice(0,5).map(e=>e.height.toFixed(2)).join(','));
+      console.log('DEBUG slide emptyCells=' + emptyCells.length + ' heights=' + emptyCells.slice(0,8).map(e=>e.height.toFixed(3)).join(','));
       results.push({ titleSpans, tableHeight: Math.round(tableRect.height), colHeaders, dayHeaders, namedCells, emptyCells });
     });
 
@@ -160,29 +156,36 @@ function parseSlideGeometry(slideData) {
   }
 
   // Check for empty half-slot cell directly above a named cell
+  // From the real HTML: full slot = 291.6px, half-hour gap = 15.21px = ~0.417 slots
+  // At Playwright scale (tableH~20): slotH=2, halfSlot=1
+  // The gap cell height ratio to slotH is: 15.21/36.45 = 0.417
+  // So we detect a half-hour gap when empty cell height is between 25%-75% of slotHeight
+  const halfSlotMin = slotHeight * 0.25;
+  const halfSlotMax = slotHeight * 0.75;
+
   function getAdjustedTop(cell) {
-    const tolerance = slotHeight * 0.4;
     for (const e of emptyCells) {
-      const xOverlap = e.left < cell.right - 2 && e.right > cell.left + 2;
-      const buttsUp = Math.abs(e.bottom - cell.top) <= 3;
-      const isHalfSlot = Math.abs(e.height - halfSlot) < tolerance;
+      // x overlap: the empty cell must be in the same column
+      const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
+      // vertical: empty cell's bottom must be at or very near cell's top
+      const buttsUp = Math.abs(e.bottom - cell.top) <= 0.6;
+      // height: must be roughly half a slot
+      const isHalfSlot = e.height >= halfSlotMin && e.height <= halfSlotMax;
       if (xOverlap && buttsUp && isHalfSlot) {
-        console.log(`    ½hr gap above "${cell.text}": emptyTop=${e.top} h=${e.height} → start shifts earlier`);
+        console.log('    half-hr gap ABOVE "' + cell.text + '": emptyH=' + e.height.toFixed(3) + ' slotH=' + slotHeight.toFixed(3) + ' adjustedTop=' + e.top.toFixed(3));
         return e.top;
       }
     }
     return cell.top;
   }
 
-  // Check for empty half-slot cell directly below a named cell
   function getAdjustedBottom(cell) {
-    const tolerance = slotHeight * 0.4;
     for (const e of emptyCells) {
-      const xOverlap = e.left < cell.right - 2 && e.right > cell.left + 2;
-      const buttsDown = Math.abs(e.top - cell.bottom) <= 3;
-      const isHalfSlot = Math.abs(e.height - halfSlot) < tolerance;
+      const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
+      const buttsDown = Math.abs(e.top - cell.bottom) <= 0.6;
+      const isHalfSlot = e.height >= halfSlotMin && e.height <= halfSlotMax;
       if (xOverlap && buttsDown && isHalfSlot) {
-        console.log(`    ½hr gap below "${cell.text}": emptyBottom=${e.bottom} h=${e.height} → end shifts later`);
+        console.log('    half-hr gap BELOW "' + cell.text + '": emptyH=' + e.height.toFixed(3) + ' adjustedBottom=' + e.bottom.toFixed(3));
         return e.bottom;
       }
     }

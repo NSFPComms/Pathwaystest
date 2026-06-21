@@ -5,7 +5,6 @@ const CANVA_URL = 'https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttY
 const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 
 function offsetToTimeStr(hoursFrom9AM) {
-  // hoursFrom9AM: 0=9AM, 4=1PM, 4.5=1:30PM, 8=5PM
   const totalMins = Math.round(hoursFrom9AM * 60);
   const hour = 9 + Math.floor(totalMins / 60);
   const mins = totalMins % 60;
@@ -43,7 +42,6 @@ async function extractSlideGeometry(page) {
 
       const allCells = Array.from(table.querySelectorAll('td, th'));
 
-      // Col headers
       const colHeaders = allCells
         .filter(c => /^(staff|student\s*staff)$/i.test(c.innerText.replace(/\s+/g,' ').trim()))
         .map(c => {
@@ -56,7 +54,6 @@ async function extractSlideGeometry(page) {
           };
         }).sort((a,b) => a.left - b.left);
 
-      // Day headers
       const daysSeen = {};
       const dayHeaders = [];
       allCells.forEach(c => {
@@ -76,7 +73,6 @@ async function extractSlideGeometry(page) {
       });
       dayHeaders.sort((a,b) => a.left - b.left);
 
-      // Named cells
       const seen = {};
       const namedCells = [];
       allCells.forEach(c => {
@@ -104,13 +100,7 @@ async function extractSlideGeometry(page) {
       });
       namedCells.sort((a,b) => Math.abs(a.top-b.top)>2 ? a.top-b.top : a.left-b.left);
 
-      results.push({
-        titleSpans,
-        tableHeight: Math.round(tableRect.height),
-        colHeaders,
-        dayHeaders,
-        namedCells
-      });
+      results.push({ titleSpans, tableHeight: Math.round(tableRect.height), colHeaders, dayHeaders, namedCells });
     });
 
     return results;
@@ -119,32 +109,36 @@ async function extractSlideGeometry(page) {
 
 function parseSlideGeometry(slideData) {
   const { titleSpans, tableHeight, colHeaders, dayHeaders, namedCells } = slideData;
-
   if (!dayHeaders.length || !colHeaders.length || !namedCells.length) return null;
 
   const week = extractWeekTitle(titleSpans);
   const schedule = {};
   dayHeaders.forEach(d => { schedule[d.dayName] = { date: d.date, staff: null, studentShifts: [] }; });
 
-  // Use minimum top of named cells as header height — this is where data actually starts
+  // headerHeight = top of first data cell = start of 9AM row
   const headerHeight = Math.min(...namedCells.map(c => c.top));
-  const dataHeight = tableHeight - headerHeight;
-  const slotHeight = dataHeight / 8; // 8 one-hour slots 9AM-5PM
+  // slotHeight derived from a full-day cell (height spanning all 8 slots, 9AM-5PM)
+  // Full-day cells have the maximum height among all cells
+  const maxCellHeight = Math.max(...namedCells.map(c => c.height));
+  const slotHeight = maxCellHeight / 8;
 
-  console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(2)}`);
-
-  function topToOffset(pixelTop) {
-    return Math.max(0, (pixelTop - headerHeight) / slotHeight);
+  // For cells NOT at the very top (i.e. they don't start at 9AM), there may be
+  // a 1px rendering gap between adjacent cells. Detect this by snapping to
+  // the nearest slot boundary using rounding.
+  function pixelToHours(pixelPos) {
+    return (pixelPos - headerHeight) / slotHeight;
   }
 
-  function bottomToOffset(pixelBottom) {
-    return Math.min(8, (pixelBottom - headerHeight) / slotHeight);
+  // Snap to nearest 0.5-hour increment to handle sub-pixel rendering gaps
+  function snapToHalf(hours) {
+    return Math.round(hours * 2) / 2;
   }
+
+  console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(3)} maxH=${maxCellHeight}`);
 
   namedCells.forEach(cell => {
     const cx = cell.left + cell.width / 2;
 
-    // Match day
     let day = dayHeaders.find(d => cx >= d.left && cx <= d.right);
     if (!day) {
       let best = Infinity;
@@ -155,7 +149,6 @@ function parseSlideGeometry(slideData) {
     }
     if (!day) return;
 
-    // Match col within day
     const dayCols = colHeaders
       .filter(col => col.centerX >= day.left - 5 && col.centerX <= day.right + 5)
       .sort((a,b) => a.left - b.left);
@@ -169,23 +162,20 @@ function parseSlideGeometry(slideData) {
 
     const role = col ? col.role : (cx < (day.left + day.right) / 2 ? 'staff' : 'student');
 
-    const startOffset = topToOffset(cell.top);
-    const endOffset = bottomToOffset(cell.bottom);
-    const startTime = offsetToTimeStr(startOffset);
-    const endTime = offsetToTimeStr(endOffset);
+    const startHours = snapToHalf(pixelToHours(cell.top));
+    const endHours = snapToHalf(pixelToHours(cell.bottom));
+    const startTime = offsetToTimeStr(startHours);
+    const endTime = offsetToTimeStr(endHours);
 
-    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top} h=${cell.height} ${startTime}-${endTime}`);
+    console.log(`  "${cell.text.padEnd(22)}" ${day.dayName.padEnd(10)} ${role.padEnd(8)} top=${cell.top} h=${cell.height} rawStart=${pixelToHours(cell.top).toFixed(2)} snap=${startHours} ${startTime}-${endTime}`);
 
     if (!schedule[day.dayName]) return;
 
     if (role === 'staff') {
       if (!schedule[day.dayName].staff) schedule[day.dayName].staff = cell.text;
     } else {
-      const dup = schedule[day.dayName].studentShifts
-        .some(s => s.name === cell.text && s.startTime === startTime);
-      if (!dup) {
-        schedule[day.dayName].studentShifts.push({ startTime, endTime, name: cell.text });
-      }
+      const dup = schedule[day.dayName].studentShifts.some(s => s.name === cell.text && s.startTime === startTime);
+      if (!dup) schedule[day.dayName].studentShifts.push({ startTime, endTime, name: cell.text });
     }
   });
 
@@ -269,4 +259,4 @@ function parseSlideGeometry(slideData) {
   }, null, 2));
   console.log('\nDone.');
   await browser.close();
-})();
+})();   

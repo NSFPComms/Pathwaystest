@@ -3,7 +3,21 @@ const fs = require('fs');
 const CANVA_URL = 'https://canva.link/qke4os46cuohhf3';
 const TEAM_CODES = ['OPS','URP','PHA','NSF','EXP','CPD'];
 
-const TIME_TO_24 = {
+// Parse times like "9AM", "1PM", "1:30PM" → "09:00", "13:00", "13:30"
+function timeTo24(t) {
+  if (!t) return '09:00';
+  const m = t.match(/^(\d+)(?::(\d+))?(AM|PM)$/i);
+  if (!m) return '09:00';
+  let h = parseInt(m[1]);
+  const mins = m[2] ? parseInt(m[2]) : 0;
+  const ampm = m[3].toUpperCase();
+  if (ampm === 'PM' && h !== 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+}
+
+// TIME_TO_24 replaced by timeTo24() parser below
+const TIME_TO_24_UNUSED = {
   '9AM - 10AM':'09:00','10AM - 11AM':'10:00','11AM - 12PM':'11:00',
   '12PM - 1PM':'12:00','1PM - 2PM':'13:00','2PM - 3PM':'14:00',
   '3PM - 4PM':'15:00','4PM - 5PM':'16:00'
@@ -116,8 +130,8 @@ function renderDay(dayName, data) {
     }
 
     const shifts = data.studentShifts || [];
-    const hasMorning = shifts.some(s => (TIME_TO_24[s.startTime]||'09:00') < '13:00');
-    const hasAfternoon = shifts.some(s => (TIME_TO_24[s.startTime]||'09:00') >= '13:00');
+    const hasMorning = shifts.some(s => (timeTo24(s.startTime)||'09:00') < '13:00');
+    const hasAfternoon = shifts.some(s => (timeTo24(s.startTime)||'09:00') >= '13:00');
 
     if (shifts.length === 0) {
       lines.push(`<div class="row"><span class="lbl">Student Staff</span><span class="empty">No student staff assigned</span></div>`);
@@ -127,8 +141,8 @@ function renderDay(dayName, data) {
       }
       shifts.forEach(shift => {
         const name = shift.name || '';
-        const start = TIME_TO_24[shift.startTime] || '09:00';
-        const end = shift.endTime ? (TIME_TO_24[shift.endTime] || '17:00') : '17:00';
+        const start = timeTo24(shift.startTime) || '09:00';
+        const end = shift.endTime ? (timeTo24(shift.endTime) || '17:00') : '17:00';
         const timeLabel = `${fmt12(start)}-${fmt12(end)}`;
 
         if (isNote(name)) {
@@ -170,16 +184,16 @@ function renderDayCell(dayData) {
   shifts.forEach(shift => {
     const name = shift.name || '';
     if (isNote(name) || isHoliday(name)) return;
-    const start = TIME_TO_24[shift.startTime] || '09:00';
-    const end = shift.endTime ? (TIME_TO_24[shift.endTime] || '17:00') : '17:00';
+    const start = timeTo24(shift.startTime) || '09:00';
+    const end = shift.endTime ? (timeTo24(shift.endTime) || '17:00') : '17:00';
     const timeLabel = `${fmt12short(start)}-${fmt12short(end)}`;
     const abbr = isTeamCode(name) ? name : firstLast(name);
     lines.push(`<span class="cell-student">${abbr} <span class="cell-time">(${timeLabel})</span></span>`);
   });
 
   // Morning gap
-  const hasMorning = shifts.some(s => (TIME_TO_24[s.startTime]||'09:00') < '13:00');
-  const hasAfternoon = shifts.some(s => (TIME_TO_24[s.startTime]||'09:00') >= '13:00');
+  const hasMorning = shifts.some(s => (timeTo24(s.startTime)||'09:00') < '13:00');
+  const hasAfternoon = shifts.some(s => (timeTo24(s.startTime)||'09:00') >= '13:00');
   if (!hasMorning && hasAfternoon && shifts.length > 0) {
     lines.splice(1, 0, `<span class="cell-student cell-empty">— (9AM-1PM)</span>`);
   }

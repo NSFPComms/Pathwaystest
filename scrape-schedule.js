@@ -102,29 +102,34 @@ async function extractSlideGeometry(page) {
       });
       namedCells.sort((a,b) => Math.abs(a.top-b.top)>2 ? a.top-b.top : a.left-b.left);
 
-      // Empty cells — SEPARATE pass, only cells with truly no text content
-      // and that are in the data area (below header rows)
+      // Empty cells — use raw (unrounded) heights to detect half-slot gaps
+      // These cells have no text but exist as spacer rows in the Canva table
       const seenEmpty = {};
       const emptyCells = [];
       allCells.forEach(c => {
         const text = c.innerText.replace(/\s+/g,' ').trim();
-        if (text) return; // must be empty
+        if (text) return; // skip cells with any text
         const r = c.getBoundingClientRect();
+        // Use raw floats for height comparison, round position for key
         const relLeft = Math.round(r.left - tableRect.left);
         const relTop = Math.round(r.top - tableRect.top);
-        const relH = Math.round(r.height);
+        const relH = r.height; // RAW float, not rounded
         const relW = Math.round(r.width);
-        if (relH < 3 || relW < 5) return; // skip degenerate cells
-        const key = relLeft + ',' + relTop + ',' + relH;
+        if (relH < 0.5 || relW < 3) return; // skip truly zero-size cells
+        const key = relLeft + ',' + relTop + ',' + Math.round(relH*10);
         if (seenEmpty[key]) return;
         seenEmpty[key] = true;
         emptyCells.push({
-          left: relLeft, top: relTop, width: relW, height: relH,
+          left: relLeft, top: relTop, width: relW,
+          height: relH, // raw float
           right: Math.round(r.right - tableRect.left),
-          bottom: Math.round(r.bottom - tableRect.top)
+          bottom: r.bottom - tableRect.top // raw float
         });
       });
+      // DEBUG: log empty cell count and sample
+      const emptyAboveMin = emptyCells.filter(e => e.height > 0.5);
 
+      console.log('DEBUG emptyCells found: ' + emptyCells.length + ' sample heights: ' + emptyCells.slice(0,5).map(e=>e.height.toFixed(2)).join(','));
       results.push({ titleSpans, tableHeight: Math.round(tableRect.height), colHeaders, dayHeaders, namedCells, emptyCells });
     });
 
@@ -143,6 +148,9 @@ function parseSlideGeometry(slideData) {
   const headerHeight = Math.min(...namedCells.map(c => c.top));
   const maxCellHeight = Math.max(...namedCells.map(c => c.height));
   const slotHeight = maxCellHeight / 8;
+  // Use raw table pixel dimensions for half-slot detection
+  // tableHeight=20 means slotH=2, halfSlot=1 — but emptyCells use raw floats
+  // so compare against slotHeight directly
   const halfSlot = slotHeight / 2;
 
   console.log(`  tableH=${tableHeight} headerH=${headerHeight} slotH=${slotHeight.toFixed(2)} halfSlot=${halfSlot.toFixed(2)} emptyCells=${emptyCells.length}`);

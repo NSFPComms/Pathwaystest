@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-21T02:29:32.375Z",
+  "lastUpdated": "2026-06-21T02:59:39.411Z",
   "source": "https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view",
   "totalWeeks": 30,
   "schedules": [
@@ -8,23 +8,12 @@
       "schedule": {
         "Monday": {
           "date": "MAY 4",
-          "staff": "Sapna David",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": "1PM - 2PM",
-              "name": "Sapna David"
-            },
-            {
-              "startTime": "1PM - 2PM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "Diana Wrenn Rapp",
+          "studentShifts": []
         },
         "Tuesday": {
           "date": "MAY 5",
-          "staff": "Sapna David",
+          "staff": "Debarati Roy",
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
@@ -68,57 +57,27 @@
         "Monday": {
           "date": "MAY 11",
           "staff": "Amanda Long",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Tuesday": {
           "date": "MAY 12",
           "staff": "Abby Holst",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Wednesday": {
           "date": "MAY 13",
-          "staff": "Micah Tucker",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "Sapna David",
+          "studentShifts": []
         },
         "Thursday": {
           "date": "MAY 14",
-          "staff": "PHA",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "Micah Tucker",
+          "studentShifts": []
         },
         "Friday": {
           "date": "MAY 15",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "PHA",
+          "studentShifts": []
         }
       }
     },
@@ -127,23 +86,12 @@
       "schedule": {
         "Monday": {
           "date": "mAY 4",
-          "staff": "Sapna David",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": "1PM - 2PM",
-              "name": "Sapna David"
-            },
-            {
-              "startTime": "1PM - 2PM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "Diana Wrenn Rapp",
+          "studentShifts": []
         },
         "Tuesday": {
           "date": "mAY 5",
-          "staff": "Sapna David",
+          "staff": "Debarati Roy",
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
@@ -187,57 +135,27 @@
         "Monday": {
           "date": "MAY 11",
           "staff": "Amanda Long",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Tuesday": {
           "date": "MAY 12",
           "staff": "Abby Holst",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Wednesday": {
           "date": "MAY 13",
-          "staff": "Micah Tucker",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "Sapna David",
+          "studentShifts": []
         },
         "Thursday": {
           "date": "MAY 14",
-          "staff": "PHA",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "Micah Tucker",
+          "studentShifts": []
         },
         "Friday": {
           "date": "MAY 15",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "staff": "PHA",
+          "studentShifts": []
         }
       }
     },
@@ -247,46 +165,22 @@
         "Monday": {
           "date": "MAY 18",
           "staff": "Amanda Long",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Tuesday": {
           "date": "MAY 19",
           "staff": "PHA",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Wednesday": {
           "date": "MAY 20",
           "staff": "PHA",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Thursday": {
           "date": "MAY 21",
           "staff": "Carol Riddock",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Friday": {
           "date": "MAY 22",
@@ -301,46 +195,22 @@
         "Monday": {
           "date": "MAY 18",
           "staff": "Amanda Long",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Tuesday": {
           "date": "MAY 19",
           "staff": "PHA",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Wednesday": {
           "date": "MAY 20",
           "staff": "PHA",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Thursday": {
           "date": "MAY 21",
           "staff": "Carol Riddock",
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Sapna David"
-            }
-          ]
+          "studentShifts": []
         },
         "Friday": {
           "date": "MAY 22",
@@ -354,47 +224,29 @@
       "schedule": {
         "Monday": {
           "date": "May 25",
-          "staff": "Montana Jackson",
+          "staff": "Memorial Day(University Closed)",
           "studentShifts": [
             {
-              "startTime": "9AM - 10AM",
+              "startTime": "1PM - 2PM",
               "endTime": null,
-              "name": "Natima Fisher"
+              "name": "Montana Jackson"
             }
           ]
         },
         "Tuesday": {
           "date": "May 26",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Tristen Jahn"
-            }
-          ]
+          "staff": "Tristen Jahn",
+          "studentShifts": []
         },
         "Wednesday": {
           "date": "May 27",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Tim Bazile"
-            }
-          ]
+          "staff": "Tim Bazile",
+          "studentShifts": []
         },
         "Thursday": {
           "date": "May 28",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Tricia Herold"
-            }
-          ]
+          "staff": "Tricia Herold",
+          "studentShifts": []
         },
         "Friday": {
           "date": "May 29",
@@ -408,47 +260,29 @@
       "schedule": {
         "Monday": {
           "date": "MAY 25",
-          "staff": "Montana Jackson",
+          "staff": "Memorial Day (University Closed)",
           "studentShifts": [
             {
-              "startTime": "9AM - 10AM",
+              "startTime": "1PM - 2PM",
               "endTime": null,
-              "name": "Natima Fisher"
+              "name": "Montana Jackson"
             }
           ]
         },
         "Tuesday": {
           "date": "MAY 26",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Tristen Jahn"
-            }
-          ]
+          "staff": "Tristen Jahn",
+          "studentShifts": []
         },
         "Wednesday": {
           "date": "MAY 27",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Tim Bazile"
-            }
-          ]
+          "staff": "Tim Bazile",
+          "studentShifts": []
         },
         "Thursday": {
           "date": "MAY 28",
-          "staff": null,
-          "studentShifts": [
-            {
-              "startTime": "9AM - 10AM",
-              "endTime": null,
-              "name": "Tricia Herold"
-            }
-          ]
+          "staff": "Tricia Herold",
+          "studentShifts": []
         },
         "Friday": {
           "date": "MAY 29",
@@ -706,8 +540,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -715,6 +559,11 @@
           "date": "JUNE 16",
           "staff": "Beth White",
           "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            },
             {
               "startTime": "9AM - 10AM",
               "endTime": null,
@@ -754,8 +603,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -763,6 +622,11 @@
           "date": "JUNE 16",
           "staff": "Beth White",
           "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            },
             {
               "startTime": "9AM - 10AM",
               "endTime": null,
@@ -802,8 +666,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -813,8 +687,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -862,8 +746,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -873,8 +767,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -922,15 +826,31 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
         "Tuesday": {
           "date": "june 30",
           "staff": "Michael Boyd",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            }
+          ]
         },
         "Wednesday": {
           "date": "july 1",
@@ -970,15 +890,31 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
         "Tuesday": {
           "date": "JUNE 30",
           "staff": "Michael Boyd",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            }
+          ]
         },
         "Wednesday": {
           "date": "JULY 1",
@@ -1018,8 +954,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1029,8 +975,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1078,8 +1034,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1089,8 +1055,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1138,8 +1114,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1149,8 +1135,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1198,8 +1194,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1209,8 +1215,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1258,8 +1274,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1269,8 +1295,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1318,8 +1354,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1329,8 +1375,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1378,8 +1434,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1389,8 +1455,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1426,8 +1502,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1437,8 +1523,18 @@
           "studentShifts": [
             {
               "startTime": "9AM - 10AM",
-              "endTime": null,
+              "endTime": "1PM - 2PM",
               "name": "Montana Jackson"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
             }
           ]
         },
@@ -1471,12 +1567,34 @@
         "Monday": {
           "date": "aug 3",
           "staff": "Katelyn Harris",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Tuesday": {
           "date": "aug 4",
           "staff": "PHA",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Wednesday": {
           "date": "aug 5",
@@ -1501,12 +1619,34 @@
         "Monday": {
           "date": "AUG 3",
           "staff": "Katelyn Harris",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Tuesday": {
           "date": "AUG 4",
           "staff": "PHA",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Wednesday": {
           "date": "AUG 5",
@@ -1531,12 +1671,34 @@
         "Monday": {
           "date": "aug 10",
           "staff": "Amanda Long",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Tuesday": {
           "date": "aug 11",
           "staff": "AJ Scott",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Wednesday": {
           "date": "aug 12",
@@ -1561,12 +1723,34 @@
         "Monday": {
           "date": "AUG 10",
           "staff": "Amanda Long",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Tuesday": {
           "date": "AUG 11",
           "staff": "AJ Scott",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Greyson Morey"
+            },
+            {
+              "startTime": "1PM - 2PM",
+              "endTime": null,
+              "name": "Vladyslav Senenko"
+            }
+          ]
         },
         "Wednesday": {
           "date": "AUG 12",
@@ -1586,5 +1770,5 @@
       }
     }
   ],
-  "summary": "Week of MAY 4 - MAY 8, 2026:\n  Monday (MAY 4):\n    Staff: Sapna David\n    Student: Sapna David 9AM - 10AM until 1PM - 2PM\n    Student: Sapna David 1PM - 2PM+\n  Tuesday (MAY 5):\n    Staff: Sapna David\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (MAY 6):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (MAY 7):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (MAY 8):\n    Staff: Don Cornwell\n\nWeek of May 11 - May 15, 2026:\n  Monday (MAY 11):\n    Staff: Amanda Long\n    Student: Sapna David 9AM - 10AM+\n  Tuesday (MAY 12):\n    Staff: Abby Holst\n    Student: Sapna David 9AM - 10AM+\n  Wednesday (MAY 13):\n    Staff: Micah Tucker\n    Student: Sapna David 9AM - 10AM+\n  Thursday (MAY 14):\n    Staff: PHA\n    Student: Sapna David 9AM - 10AM+\n  Friday (MAY 15):\n    Staff: TBD\n    Student: Sapna David 9AM - 10AM+\n\nWeek of May 4 - May 8, 2026:\n  Monday (mAY 4):\n    Staff: Sapna David\n    Student: Sapna David 9AM - 10AM until 1PM - 2PM\n    Student: Sapna David 1PM - 2PM+\n  Tuesday (mAY 5):\n    Staff: Sapna David\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (mAY 6):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (mAY 7):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (mAY 8):\n    Staff: Don Cornwell\n\nWeek of MAY 11 - MAY 15, 2026:\n  Monday (MAY 11):\n    Staff: Amanda Long\n    Student: Sapna David 9AM - 10AM+\n  Tuesday (MAY 12):\n    Staff: Abby Holst\n    Student: Sapna David 9AM - 10AM+\n  Wednesday (MAY 13):\n    Staff: Micah Tucker\n    Student: Sapna David 9AM - 10AM+\n  Thursday (MAY 14):\n    Staff: PHA\n    Student: Sapna David 9AM - 10AM+\n  Friday (MAY 15):\n    Staff: TBD\n    Student: Sapna David 9AM - 10AM+\n\nWeek of May 18 - May 22, 2026:\n  Monday (MAY 18):\n    Staff: Amanda Long\n    Student: Sapna David 9AM - 10AM+\n  Tuesday (MAY 19):\n    Staff: PHA\n    Student: Sapna David 9AM - 10AM+\n  Wednesday (MAY 20):\n    Staff: PHA\n    Student: Sapna David 9AM - 10AM+\n  Thursday (MAY 21):\n    Staff: Carol Riddock\n    Student: Sapna David 9AM - 10AM+\n  Friday (MAY 22):\n    Staff: Tim Bazile\n\nWeek of MAY 18 - MAY 22, 2026:\n  Monday (MAY 18):\n    Staff: Amanda Long\n    Student: Sapna David 9AM - 10AM+\n  Tuesday (MAY 19):\n    Staff: PHA\n    Student: Sapna David 9AM - 10AM+\n  Wednesday (MAY 20):\n    Staff: PHA\n    Student: Sapna David 9AM - 10AM+\n  Thursday (MAY 21):\n    Staff: Carol Riddock\n    Student: Sapna David 9AM - 10AM+\n  Friday (MAY 22):\n    Staff: Tim Bazile\n\nWeek of May 25 - May 29, 2026:\n  Monday (May 25):\n    Staff: Montana Jackson\n    Student: Natima Fisher 9AM - 10AM+\n  Tuesday (May 26):\n    Staff: TBD\n    Student: Tristen Jahn 9AM - 10AM+\n  Wednesday (May 27):\n    Staff: TBD\n    Student: Tim Bazile 9AM - 10AM+\n  Thursday (May 28):\n    Staff: TBD\n    Student: Tricia Herold 9AM - 10AM+\n  Friday (May 29):\n    Staff: TBD\n\nWeek of MAY 25 - MAY 29, 2026:\n  Monday (MAY 25):\n    Staff: Montana Jackson\n    Student: Natima Fisher 9AM - 10AM+\n  Tuesday (MAY 26):\n    Staff: TBD\n    Student: Tristen Jahn 9AM - 10AM+\n  Wednesday (MAY 27):\n    Staff: TBD\n    Student: Tim Bazile 9AM - 10AM+\n  Thursday (MAY 28):\n    Staff: TBD\n    Student: Tricia Herold 9AM - 10AM+\n  Friday (MAY 29):\n    Staff: TBD\n\nWeek of June 1 - June 5, 2026:\n  Monday (JUNE 1):\n    Staff: Tricia Herold\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 2):\n    Staff: Kendra Owens\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 3):\n    Staff: Jessie Mc Crary\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 4):\n    Staff: Alex Quach\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JUNE 5):\n    Staff: Katelyn Harris\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of JUNE 1 - JUNE 5, 2026:\n  Monday (JUNE 1):\n    Staff: Tricia Herold\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 2):\n    Staff: Kendra Owens\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 3):\n    Staff: Jessie Mc Crary\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 4):\n    Staff: Alex Quach\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JUNE 5):\n    Staff: Katelyn Harris\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of June 8 - June 12, 2026:\n  Monday (JUNE 8):\n    Staff: Kelshay Toomer\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 9):\n    Staff: Rey Murat\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 10):\n    Staff: AJ Scott\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 11):\n    Staff: Megan Friddle\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JUNE 12):\n    Staff: Amelia Bangura\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of JUNE 8 - JUNE 12, 2026:\n  Monday (JUNE 8):\n    Staff: Kelshay Toomer\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 9):\n    Staff: Rey Murat\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 10):\n    Staff: AJ Scott\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 11):\n    Staff: Megan Friddle\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JUNE 12):\n    Staff: Amelia Bangura\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of June 15 - June 19, 2026:\n  Monday (JUNE 15):\n    Staff: Sandra Aguilera\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 16):\n    Staff: Beth White\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 17):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 18):\n    Staff: Nydia Araya\n  Friday (JUNE 19):\n    Staff: Juneteenth(University Closed)\n\nWeek of JUNE 15 - JUNE 19, 2026:\n  Monday (JUNE 15):\n    Staff: Sandra Aguilera\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 16):\n    Staff: Beth White\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 17):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 18):\n    Staff: Nydia Araya\n  Friday (JUNE 19):\n    Staff: Juneteenth (University Closed)\n\nWeek of June 22 - June 26, 2026:\n  Monday (june 22):\n    Staff: Diana Wrenn Rapp\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (june 23):\n    Staff: Natima Fisher\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (june 24):\n    Staff: Bridget Hansen\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (june 25):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (june 26):\n    Staff: Don Cornwell\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of JUNE 22 - JUNE 26, 2026:\n  Monday (JUNE 22):\n    Staff: Diana Wrenn Rapp\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 23):\n    Staff: Natima Fisher\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JUNE 24):\n    Staff: Bridget Hansen\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JUNE 25):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JUNE 26):\n    Staff: Don Cornwell\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of June 29 - July 3, 2026:\n  Monday (june 29):\n    Staff: Ed Goode\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (june 30):\n    Staff: Michael Boyd\n  Wednesday (july 1):\n    Staff: Bridget Hansen\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (july 2):\n    Staff: Tiffany Oh\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (july 3):\n    Staff: Fri 7/3 –Independence Day (Observed)\n\nWeek of JUNE 29 - JULY 3, 2026:\n  Monday (JUNE 29):\n    Staff: Ed Goode\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JUNE 30):\n    Staff: Michael Boyd\n  Wednesday (JULY 1):\n    Staff: Bridget Hansen\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JULY 2):\n    Staff: Tiffany Oh\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JULY 3):\n    Staff: Fri 7/3 – Independence Day (Observed)\n\nWeek of July 6 - July 10, 2026:\n  Monday (july 6):\n    Staff: Ed Goode\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (july 7):\n    Staff: Tristen Jahn\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (july 8):\n    Staff: Megan Friddle\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (july 9):\n    Staff: Carol Riddock\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (july 10):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of JULY 6 - JULY 10, 2026:\n  Monday (JULY 6):\n    Staff: Ed Goode\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JULY 7):\n    Staff: Tristen Jahn\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JULY 8):\n    Staff: Megan Friddle\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JULY 9):\n    Staff: Carol Riddock\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JULY 10):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of July 13 - July 17, 2026:\n  Monday (july 13):\n    Staff: Micah Tucker\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (july 14):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (july 15):\n    Staff: Jessie Mc Crary\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (july 16):\n    Staff: Alex Quach\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (july 17):\n    Staff: Debarati Roy\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of JULY 13 - JULY 17, 2026:\n  Monday (JULY 13):\n    Staff: Micah Tucker\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JULY 14):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JULY 15):\n    Staff: Jessie Mc Crary\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JULY 16):\n    Staff: Alex Quach\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JULY 17):\n    Staff: Debarati Roy\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of July 20 - July 24, 2026:\n  Monday (july 20):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (july 21):\n    Staff: Marshall Tucker\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (july 22):\n    Staff: Abby Holst\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (july 23):\n    Staff: Marshall Tucker\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (july 24):\n    Staff: Rey Murat\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of JULY 20 - JULY 24, 2026:\n  Monday (JULY 20):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JULY 21):\n    Staff: Marshall Tucker\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JULY 22):\n    Staff: Abby Holst\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JULY 23):\n    Staff: Marshall Tucker\n    Student: Montana Jackson 9AM - 10AM+\n  Friday (JULY 24):\n    Staff: Rey Murat\n    Student: Montana Jackson 9AM - 10AM+\n\nWeek of July 27 - july 31, 2026:\n  Monday (July 27):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (july 28):\n    Staff: Tiffany Oh\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (july 29):\n    Staff: Sandra Aguilera\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (july 30):\n    Staff: Ed Goode\n  Friday (july 31):\n    Staff: Amelia Bangura\n\nWeek of JULY 27 - JULY 31, 2026:\n  Monday (JULY 27):\n    Staff: PHA\n    Student: Montana Jackson 9AM - 10AM+\n  Tuesday (JULY 28):\n    Staff: Tiffany Oh\n    Student: Montana Jackson 9AM - 10AM+\n  Wednesday (JULY 29):\n    Staff: Sandra Aguilera\n    Student: Montana Jackson 9AM - 10AM+\n  Thursday (JULY 30):\n    Staff: Ed Goode\n  Friday (JULY 31):\n    Staff: Amelia Bangura\n\nWeek of August 3 – August 7, 2026:\n  Monday (aug 3):\n    Staff: Katelyn Harris\n  Tuesday (aug 4):\n    Staff: PHA\n  Wednesday (aug 5):\n    Staff: Michael Boyd\n  Thursday (aug 6):\n    Staff: Beth White\n  Friday (aug 7):\n    Staff: Nydia Araya\n\nWeek of AUGUST 3 – AUGUST 7, 2026:\n  Monday (AUG 3):\n    Staff: Katelyn Harris\n  Tuesday (AUG 4):\n    Staff: PHA\n  Wednesday (AUG 5):\n    Staff: Michael Boyd\n  Thursday (AUG 6):\n    Staff: Beth White\n  Friday (AUG 7):\n    Staff: Nydia Araya\n\nWeek of August 10 – August 14, 2026:\n  Monday (aug 10):\n    Staff: Amanda Long\n  Tuesday (aug 11):\n    Staff: AJ Scott\n  Wednesday (aug 12):\n    Staff: Kelshay Toomer\n  Thursday (aug 13):\n    Staff: PHA\n  Friday (aug 14):\n    Staff: Kendra Owens\n\nWeek of AUGUST 10 – AUGUST 14, 2026:\n  Monday (AUG 10):\n    Staff: Amanda Long\n  Tuesday (AUG 11):\n    Staff: AJ Scott\n  Wednesday (AUG 12):\n    Staff: Kelshay Toomer\n  Thursday (AUG 13):\n    Staff: PHA\n  Friday (AUG 14):\n    Staff: Kendra Owens"
+  "summary": "Week of MAY 4 - MAY 8, 2026:\n  Monday (MAY 4): Staff=Diana Wrenn Rapp | Students=none\n  Tuesday (MAY 5): Staff=Debarati Roy | Students=Montana Jackson 9AM - 10AM\n  Wednesday (MAY 6): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Thursday (MAY 7): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Friday (MAY 8): Staff=Don Cornwell | Students=none\n\nWeek of May 11 - May 15, 2026:\n  Monday (MAY 11): Staff=Amanda Long | Students=none\n  Tuesday (MAY 12): Staff=Abby Holst | Students=none\n  Wednesday (MAY 13): Staff=Sapna David | Students=none\n  Thursday (MAY 14): Staff=Micah Tucker | Students=none\n  Friday (MAY 15): Staff=PHA | Students=none\n\nWeek of May 4 - May 8, 2026:\n  Monday (mAY 4): Staff=Diana Wrenn Rapp | Students=none\n  Tuesday (mAY 5): Staff=Debarati Roy | Students=Montana Jackson 9AM - 10AM\n  Wednesday (mAY 6): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Thursday (mAY 7): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Friday (mAY 8): Staff=Don Cornwell | Students=none\n\nWeek of MAY 11 - MAY 15, 2026:\n  Monday (MAY 11): Staff=Amanda Long | Students=none\n  Tuesday (MAY 12): Staff=Abby Holst | Students=none\n  Wednesday (MAY 13): Staff=Sapna David | Students=none\n  Thursday (MAY 14): Staff=Micah Tucker | Students=none\n  Friday (MAY 15): Staff=PHA | Students=none\n\nWeek of May 18 - May 22, 2026:\n  Monday (MAY 18): Staff=Amanda Long | Students=none\n  Tuesday (MAY 19): Staff=PHA | Students=none\n  Wednesday (MAY 20): Staff=PHA | Students=none\n  Thursday (MAY 21): Staff=Carol Riddock | Students=none\n  Friday (MAY 22): Staff=Tim Bazile | Students=none\n\nWeek of MAY 18 - MAY 22, 2026:\n  Monday (MAY 18): Staff=Amanda Long | Students=none\n  Tuesday (MAY 19): Staff=PHA | Students=none\n  Wednesday (MAY 20): Staff=PHA | Students=none\n  Thursday (MAY 21): Staff=Carol Riddock | Students=none\n  Friday (MAY 22): Staff=Tim Bazile | Students=none\n\nWeek of May 25 - May 29, 2026:\n  Monday (May 25): Staff=Memorial Day(University Closed) | Students=Montana Jackson 1PM - 2PM\n  Tuesday (May 26): Staff=Tristen Jahn | Students=none\n  Wednesday (May 27): Staff=Tim Bazile | Students=none\n  Thursday (May 28): Staff=Tricia Herold | Students=none\n  Friday (May 29): Staff=TBD | Students=none\n\nWeek of MAY 25 - MAY 29, 2026:\n  Monday (MAY 25): Staff=Memorial Day (University Closed) | Students=Montana Jackson 1PM - 2PM\n  Tuesday (MAY 26): Staff=Tristen Jahn | Students=none\n  Wednesday (MAY 27): Staff=Tim Bazile | Students=none\n  Thursday (MAY 28): Staff=Tricia Herold | Students=none\n  Friday (MAY 29): Staff=TBD | Students=none\n\nWeek of June 1 - June 5, 2026:\n  Monday (JUNE 1): Staff=Tricia Herold | Students=Montana Jackson 9AM - 10AM\n  Tuesday (JUNE 2): Staff=Kendra Owens | Students=Montana Jackson 9AM - 10AM\n  Wednesday (JUNE 3): Staff=Jessie Mc Crary | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 4): Staff=Alex Quach | Students=Montana Jackson 9AM - 10AM\n  Friday (JUNE 5): Staff=Katelyn Harris | Students=Montana Jackson 9AM - 10AM\n\nWeek of JUNE 1 - JUNE 5, 2026:\n  Monday (JUNE 1): Staff=Tricia Herold | Students=Montana Jackson 9AM - 10AM\n  Tuesday (JUNE 2): Staff=Kendra Owens | Students=Montana Jackson 9AM - 10AM\n  Wednesday (JUNE 3): Staff=Jessie Mc Crary | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 4): Staff=Alex Quach | Students=Montana Jackson 9AM - 10AM\n  Friday (JUNE 5): Staff=Katelyn Harris | Students=Montana Jackson 9AM - 10AM\n\nWeek of June 8 - June 12, 2026:\n  Monday (JUNE 8): Staff=Kelshay Toomer | Students=Montana Jackson 9AM - 10AM\n  Tuesday (JUNE 9): Staff=Rey Murat | Students=Montana Jackson 9AM - 10AM\n  Wednesday (JUNE 10): Staff=AJ Scott | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 11): Staff=Megan Friddle | Students=Montana Jackson 9AM - 10AM\n  Friday (JUNE 12): Staff=Amelia Bangura | Students=Montana Jackson 9AM - 10AM\n\nWeek of JUNE 8 - JUNE 12, 2026:\n  Monday (JUNE 8): Staff=Kelshay Toomer | Students=Montana Jackson 9AM - 10AM\n  Tuesday (JUNE 9): Staff=Rey Murat | Students=Montana Jackson 9AM - 10AM\n  Wednesday (JUNE 10): Staff=AJ Scott | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 11): Staff=Megan Friddle | Students=Montana Jackson 9AM - 10AM\n  Friday (JUNE 12): Staff=Amelia Bangura | Students=Montana Jackson 9AM - 10AM\n\nWeek of June 15 - June 19, 2026:\n  Monday (JUNE 15): Staff=Sandra Aguilera | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JUNE 16): Staff=Beth White | Students=Vladyslav Senenko 1PM - 2PM, Montana Jackson 9AM - 10AM\n  Wednesday (JUNE 17): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 18): Staff=Nydia Araya | Students=none\n  Friday (JUNE 19): Staff=Juneteenth(University Closed) | Students=none\n\nWeek of JUNE 15 - JUNE 19, 2026:\n  Monday (JUNE 15): Staff=Sandra Aguilera | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JUNE 16): Staff=Beth White | Students=Vladyslav Senenko 1PM - 2PM, Montana Jackson 9AM - 10AM\n  Wednesday (JUNE 17): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 18): Staff=Nydia Araya | Students=none\n  Friday (JUNE 19): Staff=Juneteenth (University Closed) | Students=none\n\nWeek of June 22 - June 26, 2026:\n  Monday (june 22): Staff=Diana Wrenn Rapp | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (june 23): Staff=Natima Fisher | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (june 24): Staff=Bridget Hansen | Students=Montana Jackson 9AM - 10AM\n  Thursday (june 25): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Friday (june 26): Staff=Don Cornwell | Students=Montana Jackson 9AM - 10AM\n\nWeek of JUNE 22 - JUNE 26, 2026:\n  Monday (JUNE 22): Staff=Diana Wrenn Rapp | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JUNE 23): Staff=Natima Fisher | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (JUNE 24): Staff=Bridget Hansen | Students=Montana Jackson 9AM - 10AM\n  Thursday (JUNE 25): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n  Friday (JUNE 26): Staff=Don Cornwell | Students=Montana Jackson 9AM - 10AM\n\nWeek of June 29 - July 3, 2026:\n  Monday (june 29): Staff=Ed Goode | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (june 30): Staff=Michael Boyd | Students=Greyson Morey 1PM - 2PM\n  Wednesday (july 1): Staff=Bridget Hansen | Students=Montana Jackson 9AM - 10AM\n  Thursday (july 2): Staff=Tiffany Oh | Students=Montana Jackson 9AM - 10AM\n  Friday (july 3): Staff=Fri 7/3 –Independence Day (Observed) | Students=none\n\nWeek of JUNE 29 - JULY 3, 2026:\n  Monday (JUNE 29): Staff=Ed Goode | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JUNE 30): Staff=Michael Boyd | Students=Greyson Morey 1PM - 2PM\n  Wednesday (JULY 1): Staff=Bridget Hansen | Students=Montana Jackson 9AM - 10AM\n  Thursday (JULY 2): Staff=Tiffany Oh | Students=Montana Jackson 9AM - 10AM\n  Friday (JULY 3): Staff=Fri 7/3 – Independence Day (Observed) | Students=none\n\nWeek of July 6 - July 10, 2026:\n  Monday (july 6): Staff=Ed Goode | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (july 7): Staff=Tristen Jahn | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (july 8): Staff=Megan Friddle | Students=Montana Jackson 9AM - 10AM\n  Thursday (july 9): Staff=Carol Riddock | Students=Montana Jackson 9AM - 10AM\n  Friday (july 10): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n\nWeek of JULY 6 - JULY 10, 2026:\n  Monday (JULY 6): Staff=Ed Goode | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JULY 7): Staff=Tristen Jahn | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (JULY 8): Staff=Megan Friddle | Students=Montana Jackson 9AM - 10AM\n  Thursday (JULY 9): Staff=Carol Riddock | Students=Montana Jackson 9AM - 10AM\n  Friday (JULY 10): Staff=PHA | Students=Montana Jackson 9AM - 10AM\n\nWeek of July 13 - July 17, 2026:\n  Monday (july 13): Staff=Micah Tucker | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (july 14): Staff=PHA | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (july 15): Staff=Jessie Mc Crary | Students=Montana Jackson 9AM - 10AM\n  Thursday (july 16): Staff=Alex Quach | Students=Montana Jackson 9AM - 10AM\n  Friday (july 17): Staff=Debarati Roy | Students=Montana Jackson 9AM - 10AM\n\nWeek of JULY 13 - JULY 17, 2026:\n  Monday (JULY 13): Staff=Micah Tucker | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JULY 14): Staff=PHA | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (JULY 15): Staff=Jessie Mc Crary | Students=Montana Jackson 9AM - 10AM\n  Thursday (JULY 16): Staff=Alex Quach | Students=Montana Jackson 9AM - 10AM\n  Friday (JULY 17): Staff=Debarati Roy | Students=Montana Jackson 9AM - 10AM\n\nWeek of July 20 - July 24, 2026:\n  Monday (july 20): Staff=PHA | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (july 21): Staff=Marshall Tucker | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (july 22): Staff=Abby Holst | Students=Montana Jackson 9AM - 10AM\n  Thursday (july 23): Staff=Marshall Tucker | Students=Montana Jackson 9AM - 10AM\n  Friday (july 24): Staff=Rey Murat | Students=Montana Jackson 9AM - 10AM\n\nWeek of JULY 20 - JULY 24, 2026:\n  Monday (JULY 20): Staff=PHA | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JULY 21): Staff=Marshall Tucker | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (JULY 22): Staff=Abby Holst | Students=Montana Jackson 9AM - 10AM\n  Thursday (JULY 23): Staff=Marshall Tucker | Students=Montana Jackson 9AM - 10AM\n  Friday (JULY 24): Staff=Rey Murat | Students=Montana Jackson 9AM - 10AM\n\nWeek of July 27 - july 31, 2026:\n  Monday (July 27): Staff=PHA | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (july 28): Staff=Tiffany Oh | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (july 29): Staff=Sandra Aguilera | Students=Montana Jackson 9AM - 10AM\n  Thursday (july 30): Staff=Ed Goode | Students=none\n  Friday (july 31): Staff=Amelia Bangura | Students=none\n\nWeek of JULY 27 - JULY 31, 2026:\n  Monday (JULY 27): Staff=PHA | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (JULY 28): Staff=Tiffany Oh | Students=Montana Jackson 9AM - 10AM, Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (JULY 29): Staff=Sandra Aguilera | Students=Montana Jackson 9AM - 10AM\n  Thursday (JULY 30): Staff=Ed Goode | Students=none\n  Friday (JULY 31): Staff=Amelia Bangura | Students=none\n\nWeek of August 3 – August 7, 2026:\n  Monday (aug 3): Staff=Katelyn Harris | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (aug 4): Staff=PHA | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (aug 5): Staff=Michael Boyd | Students=none\n  Thursday (aug 6): Staff=Beth White | Students=none\n  Friday (aug 7): Staff=Nydia Araya | Students=none\n\nWeek of AUGUST 3 – AUGUST 7, 2026:\n  Monday (AUG 3): Staff=Katelyn Harris | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (AUG 4): Staff=PHA | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (AUG 5): Staff=Michael Boyd | Students=none\n  Thursday (AUG 6): Staff=Beth White | Students=none\n  Friday (AUG 7): Staff=Nydia Araya | Students=none\n\nWeek of August 10 – August 14, 2026:\n  Monday (aug 10): Staff=Amanda Long | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (aug 11): Staff=AJ Scott | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (aug 12): Staff=Kelshay Toomer | Students=none\n  Thursday (aug 13): Staff=PHA | Students=none\n  Friday (aug 14): Staff=Kendra Owens | Students=none\n\nWeek of AUGUST 10 – AUGUST 14, 2026:\n  Monday (AUG 10): Staff=Amanda Long | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Tuesday (AUG 11): Staff=AJ Scott | Students=Greyson Morey 1PM - 2PM, Vladyslav Senenko 1PM - 2PM\n  Wednesday (AUG 12): Staff=Kelshay Toomer | Students=none\n  Thursday (AUG 13): Staff=PHA | Students=none\n  Friday (AUG 14): Staff=Kendra Owens | Students=none"
 }

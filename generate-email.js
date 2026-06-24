@@ -61,8 +61,10 @@ function fmt12short(t24) {
 }
 
 function fmt12(t24) {
-  const [h] = t24.split(':').map(Number);
-  return h >= 12 ? `${h === 12 ? 12 : h-12}PM` : `${h === 0 ? 12 : h}AM`;
+  const [h, m] = t24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}${ampm}`;
 }
 
 function firstLast(name) {

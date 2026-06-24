@@ -185,10 +185,12 @@ function parseSlideGeometry(slideData) {
           return xOverlap && vertMatch;
         });
         if (hasEmptyFill) {
-          const mid = currBottom + gap / 2;
-          console.log('  ½hr gap-split: "' + curr.text.trim() + '" end→' + mid.toFixed(2) + ' | "' + next.text.trim() + '" start→' + mid.toFixed(2));
-          halfHourAdjustments.set(curr, Object.assign(halfHourAdjustments.get(curr)||{}, { bottom: mid }));
-          halfHourAdjustments.set(next, Object.assign(halfHourAdjustments.get(next)||{}, { top: mid }));
+          // The gap represents a half-hour delay before the NEXT person starts.
+          // The CURRENT person ends at their natural bottom (currBottom).
+          // Only the NEXT person's start is pushed forward by the gap amount.
+          const adjustedNextTop = currBottom + gap;
+          console.log('  ½hr gap: "' + next.text.trim() + '" start ' + next.top.toFixed(2) + '→' + adjustedNextTop.toFixed(2));
+          halfHourAdjustments.set(next, Object.assign(halfHourAdjustments.get(next)||{}, { top: adjustedNextTop }));
         }
       }
     }

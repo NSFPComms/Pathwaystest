@@ -202,7 +202,7 @@ function parseSlideGeometry(slideData) {
     return halfHourAdjustments.get(cell)?.bottom ?? cell.bottom;
   }
 
-  console.log('  slotH=' + slotHeight.toFixed(3) + ' halfRange=[' + halfSlotMin.toFixed(3) + '-' + halfSlotMax.toFixed(3) + '] empty=' + emptyCells.length + ' heights=' + emptyCells.map(e=>e.height.toFixed(3)).join(','));
+  console.log('  slotH=' + slotHeight.toFixed(3) + ' empty=' + emptyCells.length + ' heights=' + emptyCells.map(e=>e.height.toFixed(3)).join(','));
 
   namedCells.forEach(cell => {
     const cx = cell.left + cell.width / 2;

@@ -185,13 +185,28 @@ function parseSlideGeometry(slideData) {
           return xOverlap && vertMatch;
         });
         if (hasEmptyFill) {
-          // The gap is a half-hour spacer. The current person ends at currBottom (e.g. 1PM).
-          // The next person starts at the midpoint of the gap (e.g. 1:30PM).
-          // We do NOT move currBottom — only next.top shifts to currBottom + gap/2.
           const adjustedNextTop = currBottom + gap / 2;
           console.log('  ½hr gap: "' + next.text.trim() + '" start ' + next.top.toFixed(2) + '→' + adjustedNextTop.toFixed(2));
           halfHourAdjustments.set(next, Object.assign(halfHourAdjustments.get(next)||{}, { top: adjustedNextTop }));
         }
+      }
+    }
+
+    // Case 2: lone cell with a half-slot empty cell directly above it
+    // (e.g. Greyson alone, starts at 1:30PM with no one before him in column)
+    for (let i = 0; i < sorted.length; i++) {
+      const cell = sorted[i];
+      if (halfHourAdjustments.has(cell)) continue; // already adjusted
+      const spacerAbove = emptyCells.find(e => {
+        const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
+        const buttsUp = Math.abs(e.bottom - cell.top) <= 0.5;
+        const isHalfSlot = e.height >= slotHeight * 0.4 && e.height <= slotHeight * 1.2;
+        return xOverlap && buttsUp && isHalfSlot;
+      });
+      if (spacerAbove) {
+        const adjustedTop = spacerAbove.top + spacerAbove.height / 2;
+        console.log('  ½hr spacer above "' + cell.text.trim() + '": ' + cell.top.toFixed(2) + '→' + adjustedTop.toFixed(2));
+        halfHourAdjustments.set(cell, Object.assign(halfHourAdjustments.get(cell)||{}, { top: adjustedTop }));
       }
     }
   });

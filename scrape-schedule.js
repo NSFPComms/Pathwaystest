@@ -185,10 +185,10 @@ function parseSlideGeometry(slideData) {
           return xOverlap && vertMatch;
         });
         if (hasEmptyFill) {
-          // The gap represents a half-hour delay before the NEXT person starts.
-          // The CURRENT person ends at their natural bottom (currBottom).
-          // Only the NEXT person's start is pushed forward by the gap amount.
-          const adjustedNextTop = currBottom + gap;
+          // The gap is a half-hour spacer. The current person ends at currBottom (e.g. 1PM).
+          // The next person starts at the midpoint of the gap (e.g. 1:30PM).
+          // We do NOT move currBottom — only next.top shifts to currBottom + gap/2.
+          const adjustedNextTop = currBottom + gap / 2;
           console.log('  ½hr gap: "' + next.text.trim() + '" start ' + next.top.toFixed(2) + '→' + adjustedNextTop.toFixed(2));
           halfHourAdjustments.set(next, Object.assign(halfHourAdjustments.get(next)||{}, { top: adjustedNextTop }));
         }

@@ -253,7 +253,7 @@ function parseSlideGeometry(slideData) {
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
-  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.setViewportSize({ width: 3840, height: 2160 }); // 4K — forces Canva to render table at full size
   console.log('Navigating...');
   await page.goto(CANVA_URL, { waitUntil: 'networkidle', timeout: 60000 });
   await page.waitForSelector('table', { timeout: 30000 });

@@ -120,7 +120,7 @@ function renderDay(dayName, data) {
   const staff = data.staff || null;
 
   if (isHoliday(staff)) {
-    lines.push(`<div class="row holiday">🏛️ ${staff}</div>`);
+    lines.push(`<div class="row holiday"> ${staff}</div>`);
   } else {
     if (!staff) {
       lines.push(`<div class="row"><span class="lbl">Staff</span><span class="empty">No staff assigned</span></div>`);
@@ -254,7 +254,7 @@ function generate(scheduleData) {
     { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
   return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
+<html><head><meta charset="UTF-8"><title>Pathways Center Front Desk Schedule — ${nextWeek.week}</title>
 <style>
   body{font-family:Arial,sans-serif;max-width:760px;margin:0 auto;padding:16px;color:#1a1a1a;font-size:14px;}
   .hdr{background:#1a1a2e;color:#fff;padding:18px 20px;border-radius:8px;margin-bottom:16px;}

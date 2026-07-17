@@ -101,15 +101,25 @@ function deduplicateWeeks(schedules) {
 
 function getNextWeek(unique) {
   const today = new Date();
-  const isFriday = today.getDay() === 5;
-  // On Fridays, compare against Monday of NEXT week so the current week is skipped.
-  // Monday of next week = today + (7 - 4) = today + 3 days.
-  const threshold = new Date(today);
-  if (isFriday) threshold.setDate(threshold.getDate() + 3);
+  const dow = today.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  // Calculate how many days until the NEXT Monday we want to show.
+  // On Monday (dow=1): show THIS week's Monday (0 days ahead).
+  // Every other day: show NEXT Monday.
+  //   Sun=0 → next Mon is +1
+  //   Tue=2 → next Mon is +6
+  //   Wed=3 → next Mon is +5
+  //   Thu=4 → next Mon is +4
+  //   Fri=5 → next Mon is +3
+  //   Sat=6 → next Mon is +2
+  const daysToTargetMonday = dow === 1 ? 0 : (8 - dow) % 7;
+  const targetMonday = new Date(today);
+  targetMonday.setDate(today.getDate() + daysToTargetMonday);
+  targetMonday.setHours(0, 0, 0, 0);
+  // Find the schedule week whose Monday matches (or is closest after) targetMonday
   for (const s of unique) {
-    const d = weekStartDate(s.schedule); // returns the Monday of that week
+    const d = weekStartDate(s.schedule);
     if (!d) continue;
-    if (d >= threshold) return s;        // first week whose Monday >= threshold
+    if (d >= targetMonday) return s;
   }
   return unique[unique.length - 1];
 }

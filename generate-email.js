@@ -262,21 +262,46 @@ function generate(scheduleData) {
     renderDay(d, nextWeek.schedule[d] || {})
   ).join('\n');
 
-  // Build plain-text summary for Teams message
-  const teamsLines = DAYS.map(d => {
+  // Build HTML summary for Teams message
+  const teamsDays = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};
-    const staff = data.staff || 'No staff';
+    const date = (data.date || '').toUpperCase();
+    const staff = data.staff || null;
     const students = (data.students || []);
-    const studentStr = students.length
+
+    const staffLine = (() => {
+      if (!staff) return '<span style="color:#888;font-style:italic;">No staff assigned</span>';
+      if (isHoliday(staff)) return '<span style="color:#c62828;font-style:italic;">' + staff + '</span>';
+      if (isTeamCode(staff)) return '<span style="color:#6a1b9a;font-weight:600;">' + staff + '</span> <span style="color:#888;font-size:12px;">9AM-5PM</span>';
+      return '<strong>' + staff + '</strong> <span style="color:#888;font-size:12px;">9AM-5PM</span>';
+    })();
+
+    const studentLines = students.length
       ? students.map(s => {
           const name = (s.name||'').trim().split(/\s+/);
           const abbr = name.length > 1 ? name[0] + ' ' + name[name.length-1][0] + '.' : name[0];
-          return abbr + ' ' + s.startTime + '-' + s.endTime;
-        }).join(', ')
-      : 'No student staff';
-    return d + ': ' + staff + ' | ' + studentStr;
-  }).join('\n');
-  const teamsBlock = '\u{1F4C5} Front Desk — ' + nextWeek.week + '\n\n' + teamsLines;
+          return '<span style="color:#6a1b9a;font-style:italic;">' + abbr + '</span> <span style="color:#888;font-size:12px;">' + s.startTime + '–' + s.endTime + '</span>';
+        }).join('<br>')
+      : '<span style="color:#bbb;font-style:italic;">No student staff</span>';
+
+    return '<div style="margin-bottom:12px;border:1px solid #e0e0e0;border-radius:7px;overflow:hidden;">'
+      + '<div style="background:#e8eaf6;padding:7px 12px;font-weight:700;font-size:12px;color:#283593;letter-spacing:.05em;">'
+      + d.toUpperCase() + (date ? ', ' + date : '')
+      + '</div>'
+      + '<div style="padding:8px 12px;font-size:13px;line-height:1.8;">'
+      + '<span style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Staff</span>&nbsp;&nbsp;' + staffLine + '<br>'
+      + '<span style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Student Staff</span>&nbsp;&nbsp;' + studentLines
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  const teamsBlock = '<div style="font-family:Arial,sans-serif;max-width:600px;">'
+    + '<div style="background:#1a1a2e;color:#fff;padding:14px 16px;border-radius:8px;margin-bottom:14px;">'
+    + '<div style="font-size:16px;font-weight:600;">Pathways Center Front Desk Schedule</div>'
+    + '<div style="opacity:0.75;font-size:12px;margin-top:3px;">Week of ' + nextWeek.week + '</div>'
+    + '</div>'
+    + teamsDays
+    + '</div>';
 
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',

@@ -1,5 +1,260 @@
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
+const fs = require('fs');
+
+const CANVA_URL = 'https://canva.link/qke4os46cuohhf3';
+const TEAM_CODES = ['OPS','URP','PHA','NSF','EXP','CPD'];
+
+// Parse times like "9AM", "1PM", "1:30PM" → "09:00", "13:00", "13:30"
+function timeTo24(t) {
+  if (!t) return '09:00';
+  const m = t.match(/^(\d+)(?::(\d+))?(AM|PM)$/i);
+  if (!m) return '09:00';
+  let h = parseInt(m[1]);
+  const mins = m[2] ? parseInt(m[2]) : 0;
+  const ampm = m[3].toUpperCase();
+  if (ampm === 'PM' && h !== 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+}
+
+// TIME_TO_24 replaced by timeTo24() parser below
+const TIME_TO_24_UNUSED = {
+  '9AM - 10AM':'09:00','10AM - 11AM':'10:00','11AM - 12PM':'11:00',
+  '12PM - 1PM':'12:00','1PM - 2PM':'13:00','2PM - 3PM':'14:00',
+  '3PM - 4PM':'15:00','4PM - 5PM':'16:00'
+};
+
+function parseMonthDay(str) {
+  if (!str) return null;
+  const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const m = str.trim().match(/([a-z]+)\s+(\d+)/i);
+  if (!m) return null;
+  const mon = months[m[1].toLowerCase().slice(0,3)];
+  if (mon === undefined) return null;
+  return { month: mon, day: parseInt(m[2]) };
+}
+
+function weekStartDate(schedule) {
+  const mon = schedule['Monday'];
+  if (!mon?.date) return null;
+  const p = parseMonthDay(mon.date);
+  if (!p) return null;
+  return new Date(2026, p.month, p.day);
+}
+
+function calLink(title, dateStr, start24, end24) {
+  const parsed = parseMonthDay(dateStr);
+  if (!parsed) return '#';
+  const pad = n => String(n).padStart(2,'0');
+  const startDt = `2026-${pad(parsed.month+1)}-${pad(parsed.day)}T${start24}:00`;
+  const endDt   = `2026-${pad(parsed.month+1)}-${pad(parsed.day)}T${end24}:00`;
+  const safeTitle = title.replace(/[–—]/g, '-');
+  const p = new URLSearchParams({ subject: safeTitle, startdt: startDt, enddt: endDt, allday: 'false' });
+  return `https://outlook.cloud.microsoft.com/calendar/0/action/compose?${p.toString()}`;
+}
+
+function fmt12short(t24) {
+  // Returns "9AM", "1PM", "1:30PM" etc
+  const [h, m] = t24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function fmt12(t24) {
+  const [h, m] = t24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function firstLast(name) {
+  // "Montana Jackson" -> "Montana J."
+  const parts = (name||'').trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length-1][0]}.`;
+}
+
+function isTeamCode(name) {
+  return TEAM_CODES.includes((name||'').trim().toUpperCase());
+}
+
+function isHoliday(name) {
+  return (name||'').toLowerCase().includes('closed');
+}
+
+function isNote(name) {
+  const n = (name||'').toLowerCase();
+  return n.includes('observed') || n.includes('independence') ||
+         n.includes('juneteenth') || n.includes('memorial');
+}
+
+function deduplicateWeeks(schedules) {
+  const seen = new Set();
+  return schedules.filter(s => {
+    if (!s.week) return false;
+    const key = s.week.toLowerCase().replace(/\s+/g,'');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function getNextWeek(unique) {
+  const today = new Date();
+  for (const s of unique) {
+    const d = weekStartDate(s.schedule);
+    if (!d) continue;
+    const weekEnd = new Date(d);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    if (weekEnd >= today) return s;
+  }
+  return unique[0];
+}
+
+function renderDay(dayName, data) {
+  const date = (data.date || '').toUpperCase();
+  const lines = [];
+  lines.push(`<div class="day">`);
+  lines.push(`<div class="day-hdr">${dayName.toUpperCase()}${date ? ', ' + date : ''}</div>`);
+
+  const staff = data.staff || null;
+
+  if (isHoliday(staff)) {
+    lines.push(`<div class="row holiday">🏛️ ${staff}</div>`);
+  } else {
+    if (!staff) {
+      lines.push(`<div class="row"><span class="lbl">Staff</span><span class="empty">No staff assigned</span></div>`);
+    } else if (isTeamCode(staff)) {
+      lines.push(`<div class="row"><span class="lbl">Staff</span><span class="team">${staff} &middot; <span class="muted">9AM-5PM</span></span></div>`);
+    } else {
+      const link = calLink(`Front Desk (All Day): ${staff}`, data.date, '09:00', '17:00');
+      lines.push(`<div class="row"><span class="lbl">Staff</span><a href="${link}" class="name">${staff} &middot; <span class="muted">9AM-5PM</span><span class="badge">+ Calendar</span></a></div>`);
+    }
+
+    const shifts = data.studentShifts || [];
+    const hasMorning = shifts.some(s => (timeTo24(s.startTime)||'09:00') < '13:00');
+    const hasAfternoon = shifts.some(s => (timeTo24(s.startTime)||'09:00') >= '13:00');
+
+    if (shifts.length === 0) {
+      lines.push(`<div class="row"><span class="lbl">Student Staff</span><span class="empty">No student staff assigned</span></div>`);
+    } else {
+      if (!hasMorning && hasAfternoon) {
+        lines.push(`<div class="row"><span class="lbl">Student Staff</span><span class="empty">No student staff 9AM-1PM</span></div>`);
+      }
+      shifts.forEach(shift => {
+        const name = shift.name || '';
+        const start = timeTo24(shift.startTime) || '09:00';
+        const end = shift.endTime ? (timeTo24(shift.endTime) || '17:00') : '17:00';
+        const timeLabel = `${fmt12(start)}-${fmt12(end)}`;
+
+        if (isNote(name)) {
+          lines.push(`<div class="row"><span class="lbl">Student Staff</span><span class="note">📌 ${name}</span></div>`);
+        } else if (isTeamCode(name)) {
+          lines.push(`<div class="row"><span class="lbl">Student Staff</span><span class="team">${name} &middot; <span class="muted">${timeLabel}</span></span></div>`);
+        } else {
+          const link = calLink(`Front Desk (Student): ${name} ${timeLabel}`, data.date, start, end);
+          lines.push(`<div class="row"><span class="lbl">Student Staff</span><a href="${link}" class="name">${name} &middot; <span class="muted">${timeLabel}</span><span class="badge">+ Calendar</span></a></div>`);
+        }
+      });
+    }
+  }
+
+  lines.push(`</div>`);
+  return lines.join('\n');
+}
+
+function renderDayCell(dayData) {
+  // Returns HTML for a single table cell combining staff + student staff
+  if (!dayData) return '<span class="na">-</span>';
+
+  const staff = dayData.staff || null;
+  const shifts = dayData.studentShifts || [];
+  const lines = [];
+
+  // Staff line
+  if (!staff) {
+    lines.push(`<span class="na">-</span>`);
+  } else if (isHoliday(staff)) {
+    lines.push(`<span class="hol">Holiday</span>`);
+  } else if (isTeamCode(staff)) {
+    lines.push(`<span class="team-sm">${staff}</span>`);
+  } else {
+    lines.push(`<span class="cell-staff">${staff}</span>`);
+  }
+
+  // Student staff lines — italic purple, abbreviated, with time
+  shifts.forEach(shift => {
+    const name = shift.name || '';
+    if (isNote(name) || isHoliday(name)) return;
+    const start = timeTo24(shift.startTime) || '09:00';
+    const end = shift.endTime ? (timeTo24(shift.endTime) || '17:00') : '17:00';
+    const timeLabel = `${fmt12short(start)}-${fmt12short(end)}`;
+    const abbr = isTeamCode(name) ? name : firstLast(name);
+    lines.push(`<span class="cell-student">${abbr} <span class="cell-time">(${timeLabel})</span></span>`);
+  });
+
+  // Morning gap
+  const hasMorning = shifts.some(s => (timeTo24(s.startTime)||'09:00') < '13:00');
+  const hasAfternoon = shifts.some(s => (timeTo24(s.startTime)||'09:00') >= '13:00');
+  if (!hasMorning && hasAfternoon && shifts.length > 0) {
+    lines.splice(1, 0, `<span class="cell-student cell-empty">— (9AM-1PM)</span>`);
+  }
+
+  if (shifts.length === 0 && staff && !isHoliday(staff)) {
+    lines.push(`<span class="cell-student cell-empty">no student staff</span>`);
+  }
+
+  return lines.join('<br>');
+}
+
+function renderFullSchedule(unique, nextWeek) {
+  const DAY_KEYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  const today = new Date();
+
+  const rows = unique.map(w => {
+    const wStart = weekStartDate(w.schedule);
+    const wEnd = wStart ? new Date(wStart.getTime() + 6*24*60*60*1000) : null;
+    const isPast = wEnd && wEnd < today;
+    const isCurrent = w.week === nextWeek.week;
+    const rowClass = isPast ? 'past-row' : (isCurrent ? 'current-row' : '');
+
+    const dayCells = DAY_KEYS.map(d =>
+      `<td>${renderDayCell(w.schedule[d])}</td>`
+    ).join('');
+
+    return `<tr class="${rowClass}">
+      <td class="wk-col">${w.week}</td>
+      ${dayCells}
+    </tr>`;
+  }).join('\n');
+
+  return `<table class="tbl">
+  <thead><tr>
+    <th>Week</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>`;
+}
+
+function generate(scheduleData) {
+  const unique = deduplicateWeeks(scheduleData.schedules);
+  if (!unique.length) {
+    console.log('No schedules found in schedule.json — writing placeholder email.');
+    return `<!DOCTYPE html><html><body><p>Schedule data not yet available. Please check back later.</p></body></html>`;
+  }
+  const nextWeek = getNextWeek(unique);
+  const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+  const spotlightDays = DAYS.map(d =>
+    renderDay(d, nextWeek.schedule[d] || {})
+  ).join('\n');
+
+  const fullTable = renderFullSchedule(unique, nextWeek);
+  const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',
+    { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Pathways Center Front Desk Schedule — ${nextWeek.week}</title>
 <style>
   body{font-family:Arial,sans-serif;max-width:760px;margin:0 auto;padding:16px;color:#1a1a1a;font-size:14px;}
   .hdr{background:#1a1a2e;color:#fff;padding:18px 20px;border-radius:8px;margin-bottom:16px;}
@@ -37,118 +292,35 @@
   .footer{margin-top:20px;font-size:11px;color:#aaa;border-top:1px solid #f0f0f0;padding-top:12px;}
 </style>
 </head><body>
+<!-- SUBJECT: Pathways Center Front Desk Schedule — ${nextWeek.week} -->
 
 <div class="hdr">
-  <h1>📋 Pathways Center Front Desk Schedule</h1>
-  <p>Week of JULY 13 - JULY 17, 2026</p>
+  <h1>Pathways Center Front Desk Schedule</h1>
+  <p>Week of ${nextWeek.week}</p>
 </div>
 
 <div class="tip">👆 Click any name to add that shift to your Outlook calendar.</div>
 
-<div class="day">
-<div class="day-hdr">MONDAY, JULY 13</div>
-<div class="row"><span class="lbl">Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28All+Day%29%3A+Micah+Tucker&startdt=2026-07-13T09%3A00%3A00&enddt=2026-07-13T17%3A00%3A00&allday=false" class="name">Micah Tucker &middot; <span class="muted">9AM-5PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Montana+Jackson+9AM-1PM&startdt=2026-07-13T09%3A00%3A00&enddt=2026-07-13T13%3A00%3A00&allday=false" class="name">Montana Jackson &middot; <span class="muted">9AM-1PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Vladyslav+Senenko+1%3A30PM-5PM&startdt=2026-07-13T13%3A30%3A00&enddt=2026-07-13T17%3A00%3A00&allday=false" class="name">Vladyslav Senenko &middot; <span class="muted">1:30PM-5PM</span><span class="badge">+ Calendar</span></a></div>
-</div>
-<div class="day">
-<div class="day-hdr">TUESDAY, JULY 14</div>
-<div class="row"><span class="lbl">Staff</span><span class="team">PHA &middot; <span class="muted">9AM-5PM</span></span></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Montana+Jackson+9AM-1PM&startdt=2026-07-14T09%3A00%3A00&enddt=2026-07-14T13%3A00%3A00&allday=false" class="name">Montana Jackson &middot; <span class="muted">9AM-1PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Greyson+Morey+1%3A30PM-5PM&startdt=2026-07-14T13%3A30%3A00&enddt=2026-07-14T17%3A00%3A00&allday=false" class="name">Greyson Morey &middot; <span class="muted">1:30PM-5PM</span><span class="badge">+ Calendar</span></a></div>
-</div>
-<div class="day">
-<div class="day-hdr">WEDNESDAY, JULY 15</div>
-<div class="row"><span class="lbl">Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28All+Day%29%3A+Jessie+McCrary&startdt=2026-07-15T09%3A00%3A00&enddt=2026-07-15T17%3A00%3A00&allday=false" class="name">Jessie McCrary &middot; <span class="muted">9AM-5PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Montana+Jackson+9AM-1PM&startdt=2026-07-15T09%3A00%3A00&enddt=2026-07-15T13%3A00%3A00&allday=false" class="name">Montana Jackson &middot; <span class="muted">9AM-1PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Vladyslav+Senenko+1%3A30PM-5PM&startdt=2026-07-15T13%3A30%3A00&enddt=2026-07-15T17%3A00%3A00&allday=false" class="name">Vladyslav Senenko &middot; <span class="muted">1:30PM-5PM</span><span class="badge">+ Calendar</span></a></div>
-</div>
-<div class="day">
-<div class="day-hdr">THURSDAY, JULY 16</div>
-<div class="row"><span class="lbl">Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28All+Day%29%3A+Alex+Quach&startdt=2026-07-16T09%3A00%3A00&enddt=2026-07-16T17%3A00%3A00&allday=false" class="name">Alex Quach &middot; <span class="muted">9AM-5PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Montana+Jackson+9AM-1PM&startdt=2026-07-16T09%3A00%3A00&enddt=2026-07-16T13%3A00%3A00&allday=false" class="name">Montana Jackson &middot; <span class="muted">9AM-1PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Greyson+Morey+1%3A30PM-5PM&startdt=2026-07-16T13%3A30%3A00&enddt=2026-07-16T17%3A00%3A00&allday=false" class="name">Greyson Morey &middot; <span class="muted">1:30PM-5PM</span><span class="badge">+ Calendar</span></a></div>
-</div>
-<div class="day">
-<div class="day-hdr">FRIDAY, JULY 17</div>
-<div class="row"><span class="lbl">Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28All+Day%29%3A+Debarati+Roy&startdt=2026-07-17T09%3A00%3A00&enddt=2026-07-17T17%3A00%3A00&allday=false" class="name">Debarati Roy &middot; <span class="muted">9AM-5PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Montana+Jackson+9AM-1PM&startdt=2026-07-17T09%3A00%3A00&enddt=2026-07-17T13%3A00%3A00&allday=false" class="name">Montana Jackson &middot; <span class="muted">9AM-1PM</span><span class="badge">+ Calendar</span></a></div>
-<div class="row"><span class="lbl">Student Staff</span><a href="https://outlook.cloud.microsoft.com/calendar/0/action/compose?subject=Front+Desk+%28Student%29%3A+Vladyslav+Senenko+1%3A30PM-5PM&startdt=2026-07-17T13%3A30%3A00&enddt=2026-07-17T17%3A00%3A00&allday=false" class="name">Vladyslav Senenko &middot; <span class="muted">1:30PM-5PM</span><span class="badge">+ Calendar</span></a></div>
-</div>
+${spotlightDays}
 
 <div class="sec">Full Schedule</div>
-<table class="tbl">
-  <thead><tr>
-    <th>Week</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th>
-  </tr></thead>
-  <tbody><tr class="past-row">
-      <td class="wk-col">MAY 4 - MAY 8, 2026</td>
-      <td><span class="cell-staff">Diana Wrenn Rapp</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-12PM)</span></span><br><span class="cell-student">Montana J. <span class="cell-time">(12PM-5PM)</span></span></td><td><span class="cell-staff">Debarati Roy</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Sapna D. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Sapna D. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Sapna D. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Don Cornwell</span><br><span class="cell-student cell-empty">no student staff</span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">MAY 11 - MAY 15, 2026</td>
-      <td><span class="cell-staff">Amanda Long</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td><td><span class="cell-staff">Abby Holst</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td><td><span class="na">-</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td><td><span class="cell-staff">Micah Tucker</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">MAY 18 - MAY 22, 2026</td>
-      <td><span class="cell-staff">Amanda Long</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Carol Riddock</span><br><span class="cell-student">Sapna D. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Tim Bazile</span><br><span class="cell-student cell-empty">no student staff</span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">MAY 25 - MAY 29, 2026</td>
-      <td><span class="hol">Holiday</span></td><td><span class="cell-staff">Natima Fisher</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Montana J. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Tristen Jahn</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Montana J. <span class="cell-time">(3PM-5PM)</span></span></td><td><span class="cell-staff">Tim Bazile</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Montana J. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Tricia Herold</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Montana J. <span class="cell-time">(1PM-5PM)</span></span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">JUNE 1 - JUNE 5, 2026</td>
-      <td><span class="cell-staff">Tricia Herold</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Kendra Owens</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Jessie McCrary</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Alex Quach</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Katelyn Harris</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">JUNE 8 - JUNE 12, 2026</td>
-      <td><span class="cell-staff">Kelshay Toomer</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Rey Murat</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">AJ Scott</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Megan Friddle</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td><td><span class="cell-staff">Amelia Bangura</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">JUNE 15 - JUNE 19, 2026</td>
-      <td><span class="cell-staff">Sandra Aguilera</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Beth White</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Nydia Araya</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(2PM-5PM)</span></span></td><td><span class="hol">Holiday</span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">JUNE 22 - JUNE 26, 2026</td>
-      <td><span class="cell-staff">Diana Wrenn Rapp</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Natima Fisher</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Bridget Hansen</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Don Cornwell</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">JUNE 29 - JULY 3, 2026</td>
-      <td><span class="cell-staff">Ed Goode</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Michael Boyd</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Greyson M. <span class="cell-time">(2PM-5PM)</span></span></td><td><span class="cell-staff">Bridget Hansen</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Tiffany Oh</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Fri 7/3 – Independence Day (Observed)</span><br><span class="cell-student cell-empty">no student staff</span></td>
-    </tr>
-<tr class="past-row">
-      <td class="wk-col">JULY 6 - JULY 10, 2026</td>
-      <td><span class="cell-staff">Ed Goode</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Tristen Jahn</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Megan Friddle</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Carol Riddock</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td>
-    </tr>
-<tr class="current-row">
-      <td class="wk-col">JULY 13 - JULY 17, 2026</td>
-      <td><span class="cell-staff">Micah Tucker</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Jessie McCrary</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Alex Quach</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Debarati Roy</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td>
-    </tr>
-<tr class="">
-      <td class="wk-col">JULY 20 - JULY 24, 2026</td>
-      <td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Marshall Tucker</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Abby Holst</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Marshall Tucker</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Rey Murat</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td>
-    </tr>
-<tr class="">
-      <td class="wk-col">JULY 27 - JULY 31, 2026</td>
-      <td><span class="team-sm">PHA</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Tiffany Oh</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Greyson M. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Sandra Aguilera</span><br><span class="cell-student">Montana J. <span class="cell-time">(9AM-1PM)</span></span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1:30PM-5PM)</span></span></td><td><span class="cell-staff">Ed Goode</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Greyson M. <span class="cell-time">(2PM-5PM)</span></span></td><td><span class="cell-staff">Amelia Bangura</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(2PM-5PM)</span></span></td>
-    </tr>
-<tr class="">
-      <td class="wk-col">AUGUST 3 – AUGUST 7, 2026</td>
-      <td><span class="cell-staff">Katelyn Harris</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Greyson M. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Michael Boyd</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Beth White</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Greyson M. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Amanda Long</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1PM-5PM)</span></span></td>
-    </tr>
-<tr class="">
-      <td class="wk-col">AUGUST 10 – AUGUST 14, 2026</td>
-      <td><span class="cell-staff">Nydia Araya</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">AJ Scott</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Greyson M. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Kelshay Toomer</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="team-sm">PHA</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Greyson M. <span class="cell-time">(1PM-5PM)</span></span></td><td><span class="cell-staff">Kendra Owens</span><br><span class="cell-student cell-empty">— (9AM-1PM)</span><br><span class="cell-student">Vladyslav S. <span class="cell-time">(1PM-5PM)</span></span></td>
-    </tr></tbody>
-</table>
+${fullTable}
 
 <div class="canva">
-  🎨 Need to make a change? <a href="https://canva.link/qke4os46cuohhf3">Open the schedule in Canva →</a>
+  Need to make a change? <a href="${CANVA_URL}">Open the schedule in Canva →</a>
 </div>
 
 <div class="footer">
-  Sent automatically every Friday. Schedule last updated: Friday, July 17, 2026.
+  Sent automatically every Friday. Schedule last updated: ${updated}.
 </div>
 
-</body></html>
+</body></html>`;
+}
+
+const data = JSON.parse(fs.readFileSync('schedule.json', 'utf8'));
+const html = generate(data);
+fs.writeFileSync('email-body.html', html);
+console.log('email-body.html written.');
+const subject = `Pathways Center Front Desk Schedule — ${nextWeek.week}`;
+fs.writeFileSync('email-subject.txt', subject, 'utf8');
+console.log('email-subject.txt: ' + subject);

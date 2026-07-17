@@ -292,9 +292,10 @@ function generate(scheduleData) {
   .footer{margin-top:20px;font-size:11px;color:#aaa;border-top:1px solid #f0f0f0;padding-top:12px;}
 </style>
 </head><body>
+<!-- SUBJECT: Pathways Center Front Desk Schedule — ${nextWeek.week} -->
 
 <div class="hdr">
-  <h1>📋 Pathways Center Front Desk Schedule</h1>
+  <h1>Pathways Center Front Desk Schedule</h1>
   <p>Week of ${nextWeek.week}</p>
 </div>
 
@@ -306,7 +307,7 @@ ${spotlightDays}
 ${fullTable}
 
 <div class="canva">
-  🎨 Need to make a change? <a href="${CANVA_URL}">Open the schedule in Canva →</a>
+  Need to make a change? <a href="${CANVA_URL}">Open the schedule in Canva →</a>
 </div>
 
 <div class="footer">
@@ -320,3 +321,6 @@ const data = JSON.parse(fs.readFileSync('schedule.json', 'utf8'));
 const html = generate(data);
 fs.writeFileSync('email-body.html', html);
 console.log('email-body.html written.');
+const subject = `Pathways Center Front Desk Schedule — ${nextWeek.week}`;
+fs.writeFileSync('email-subject.txt', subject, 'utf8');
+console.log('email-subject.txt: ' + subject);

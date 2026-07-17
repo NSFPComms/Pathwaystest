@@ -262,47 +262,105 @@ function generate(scheduleData) {
     renderDay(d, nextWeek.schedule[d] || {})
   ).join('\n');
 
-  // Helper: first name + last initial (e.g. "Marshall Tucker" -> "Marshall T.")
+  // Helper: first name + last initial e.g. "Marshall Tucker" -> "Marshall T."
   function teamsAbbr(name) {
     const parts = (name||'').trim().split(/\s+/);
     if (parts.length === 1) return parts[0];
     return parts[0] + ' ' + parts[parts.length - 1][0] + '.';
   }
 
-  // Build HTML summary for Teams message — minimal, dark-mode-safe, no backgrounds
-  const teamsDays = DAYS.map(d => {
+  // Helper: abbreviated date e.g. "JULY 20" -> "Jul 20"
+  function teamsDate(dateStr) {
+    if (!dateStr) return '';
+    // dateStr is like "JULY 20" or "JUL 20"
+    const months = {JAN:'Jan',FEB:'Feb',MAR:'Mar',APR:'Apr',MAY:'May',JUN:'Jun',
+                    JUL:'Jul',AUG:'Aug',SEP:'Sep',OCT:'Oct',NOV:'Nov',DEC:'Dec',
+                    JANUARY:'Jan',FEBRUARY:'Feb',MARCH:'Mar',APRIL:'Apr',JUNE:'Jun',
+                    JULY:'Jul',AUGUST:'Aug',SEPTEMBER:'Sep',OCTOBER:'Oct',NOVEMBER:'Nov',DECEMBER:'Dec'};
+    const parts = dateStr.trim().toUpperCase().split(/\s+/);
+    if (parts.length >= 2) {
+      const mon = months[parts[0]] || parts[0];
+      return mon + ' ' + parts[1];
+    }
+    return dateStr;
+  }
+
+  // Helper: day abbreviation e.g. "Monday" -> "Mon"
+  function teamsDay(d) { return d.slice(0,3); }
+
+  const BLUE = '#1E53A3';
+
+  // Build one table row per day
+  const teamRows = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};
-    const date = (data.date || '').toUpperCase();
+    const date = teamsDate(data.date || '');
     const staff = data.staff || null;
     const students = (data.students || []);
 
-    // Day header: bold + underline, no background
-    const dayHeader = '<p style="margin:14px 0 4px;font-size:14px;font-weight:700;text-decoration:underline;">'
-      + d.slice(0,3) + (date ? ', ' + date : '') + '</p>';
+    const dayLabel = teamsDay(d) + (date ? ', ' + date : '');
 
-    // Staff line: first name + last initial; italics if team code or holiday
-    const staffDisplay = (() => {
-      if (!staff) return '<i>No staff assigned</i>';
-      if (isHoliday(staff)) return '<i>' + staff + '</i>';
-      if (isTeamCode(staff)) return '<i>' + staff + '</i> <b>(9AM-5PM)</b>';
-      return teamsAbbr(staff) + ' <b>(9AM-5PM)</b>';
+    const staffLine = (() => {
+      if (!staff) return 'Staff: <i>No staff assigned</i> <strong>(9AM-5PM)</strong>';
+      if (isHoliday(staff)) return 'Staff: <i>' + staff + '</i>';
+      if (isTeamCode(staff)) return 'Staff: <i>' + staff + '</i> <strong>(9AM-5PM)</strong>';
+      return 'Staff: <span style="color:' + BLUE + ';">' + teamsAbbr(staff) + '</span> <strong>(9AM-5PM)</strong>';
     })();
 
-    // Student lines: first name + last initial, times in bold
-    const studentDisplay = students.length
-      ? students.map(s =>
-          teamsAbbr(s.name) + ' <b>(' + s.startTime + '-' + s.endTime + ')</b>'
-        ).join('<br>')
-      : 'No Student Staff';
+    const studentLine = (() => {
+      if (!students.length) {
+        return 'Student: <span style="color:' + BLUE + ';"><i>No Student Staff</i></span>';
+      }
+      return 'Student: ' + students.map(s =>
+        '<span style="color:' + BLUE + ';">' + teamsAbbr(s.name) + '</span> <strong>(' + s.startTime + '-' + s.endTime + ')</strong>'
+      ).join(', ');
+    })();
 
-    return dayHeader
-      + '<p style="margin:2px 0;">Staff: ' + staffDisplay + '</p>'
-      + '<p style="margin:2px 0;">Student: ' + studentDisplay + '</p>';
+    return '<tr><td>'
+      + '<p><span style="font-size:inherit;"><strong><u>' + dayLabel + '</u></strong></span></p>'
+      + '<p>' + staffLine + '</p>'
+      + '<p>' + studentLine + '</p>'
+      + '<p>&nbsp;</p>'
+      + '</td></tr>';
   }).join('');
 
-  const teamsBlock = '<p style="margin:0 0 6px;display:inline-block;background:#e8eaf6;color:#283593;font-size:15px;font-weight:700;padding:6px 16px;border-radius:20px;">Front Desk Schedule</p>'
-    + '<p style="margin:0 0 14px;font-size:13px;font-weight:700;">Week of ' + nextWeek.week + '</p>'
-    + teamsDays;
+  // Box-drawing characters for day cards
+  const BOX_TOP = '<p>┌──────────────────┐</p>';
+  const BOX_BOT = '<p>└──────────────────┘</p>';
+
+  const teamsDays = DAYS.map(d => {
+    const data = nextWeek.schedule[d] || {};
+    const date = teamsDate(data.date || '');
+    const staff = data.staff || null;
+    const students = (data.students || []);
+    const dayLabel = teamsDay(d) + (date ? ', ' + date : '');
+
+    const staffDisplay = (() => {
+      if (!staff) return '<i>No staff assigned</i> <strong>(9AM-5PM)</strong>';
+      if (isHoliday(staff)) return '<i>' + staff + '</i>';
+      if (isTeamCode(staff)) return '<i>' + staff + '</i> <strong>(9AM-5PM)</strong>';
+      return '<span style="color:' + BLUE + ';">' + teamsAbbr(staff) + '</span> <strong>(9AM-5PM)</strong>';
+    })();
+
+    const studentDisplay = students.length
+      ? students.map(s =>
+          '<span style="color:' + BLUE + ';">' + teamsAbbr(s.name) + '</span> <strong>(' + s.startTime + '-' + s.endTime + ')</strong>'
+        ).join('<br>&nbsp; Student: ')
+      : '<span style="color:' + BLUE + ';"><i>No Student Staff</i></span>';
+
+    return BOX_TOP
+      + '<p><span style="font-size:inherit;"><strong>&nbsp; <u>' + dayLabel + '</u></strong></span></p>'
+      + '<p>&nbsp; Staff: ' + staffDisplay + '</p>'
+      + '<p>&nbsp; Student: ' + studentDisplay + '</p>'
+      + BOX_BOT;
+  }).join('');
+
+  const teamsBlock = '<div style="background-color:rgb(255,255,255);padding:4px;">'
+    + '<p><span style="color:' + BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
+    + '<p><span style="font-size:inherit;"><i>Week of ' + nextWeek.week + '</i></span></p>'
+    + teamsDays
+    + '<p>&nbsp;</p>'
+    + '<p><span style="color:' + BLUE + ';"><i>Thank you to everyone serving at the front desk this week!</i></span></p>'
+    + '</div>';
 
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',

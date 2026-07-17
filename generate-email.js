@@ -102,15 +102,14 @@ function deduplicateWeeks(schedules) {
 function getNextWeek(unique) {
   const today = new Date();
   const isFriday = today.getDay() === 5;
-  // On Fridays the email covers NEXT week, so advance the threshold by 1 day
+  // On Fridays, compare against Monday of NEXT week so the current week is skipped.
+  // Monday of next week = today + (7 - 4) = today + 3 days.
   const threshold = new Date(today);
-  if (isFriday) threshold.setDate(threshold.getDate() + 1);
+  if (isFriday) threshold.setDate(threshold.getDate() + 3);
   for (const s of unique) {
-    const d = weekStartDate(s.schedule);
+    const d = weekStartDate(s.schedule); // returns the Monday of that week
     if (!d) continue;
-    const weekEnd = new Date(d);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    if (weekEnd >= threshold) return s;
+    if (d >= threshold) return s;        // first week whose Monday >= threshold
   }
   return unique[unique.length - 1];
 }

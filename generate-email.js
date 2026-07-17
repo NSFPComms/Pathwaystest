@@ -101,14 +101,18 @@ function deduplicateWeeks(schedules) {
 
 function getNextWeek(unique) {
   const today = new Date();
+  const isFriday = today.getDay() === 5;
+  // On Fridays the email covers NEXT week, so advance the threshold by 1 day
+  const threshold = new Date(today);
+  if (isFriday) threshold.setDate(threshold.getDate() + 1);
   for (const s of unique) {
     const d = weekStartDate(s.schedule);
     if (!d) continue;
     const weekEnd = new Date(d);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    if (weekEnd >= today) return s;
+    if (weekEnd >= threshold) return s;
   }
-  return unique[0];
+  return unique[unique.length - 1];
 }
 
 function renderDay(dayName, data) {
@@ -120,7 +124,7 @@ function renderDay(dayName, data) {
   const staff = data.staff || null;
 
   if (isHoliday(staff)) {
-    lines.push(`<div class="row holiday"> ${staff}</div>`);
+    lines.push(`<div class="row holiday">🏛️ ${staff}</div>`);
   } else {
     if (!staff) {
       lines.push(`<div class="row"><span class="lbl">Staff</span><span class="empty">No staff assigned</span></div>`);
@@ -318,9 +322,14 @@ ${fullTable}
 }
 
 const data = JSON.parse(fs.readFileSync('schedule.json', 'utf8'));
+// Derive subject from the same week selection logic used in generate()
+const unique = deduplicateWeeks(data.schedules || []);
+const weekForSubject = unique.length ? getNextWeek(unique) : null;
+const subject = weekForSubject
+  ? `Pathways Center Front Desk Schedule — ${weekForSubject.week}`
+  : 'Pathways Center Front Desk Schedule';
 const html = generate(data);
 fs.writeFileSync('email-body.html', html);
 console.log('email-body.html written.');
-const subject = `Pathways Center Front Desk Schedule — ${nextWeek.week}`;
 fs.writeFileSync('email-subject.txt', subject, 'utf8');
 console.log('email-subject.txt: ' + subject);

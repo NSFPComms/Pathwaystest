@@ -288,79 +288,45 @@ function generate(scheduleData) {
   // Helper: day abbreviation e.g. "Monday" -> "Mon"
   function teamsDay(d) { return d.slice(0,3); }
 
-  const BLUE = '#1E53A3';
 
-  // Build one table row per day
-  const teamRows = DAYS.map(d => {
-    const data = nextWeek.schedule[d] || {};
-    const date = teamsDate(data.date || '');
-    const staff = data.staff || null;
-    const students = (data.students || []);
+  const TITLE_BLUE = '#1E53A3';
+  const NAME_BLUE  = '#1976d2';
 
-    const dayLabel = teamsDay(d) + (date ? ', ' + date : '');
-
-    const staffLine = (() => {
-      if (!staff) return 'Staff: <i>No staff assigned</i> <strong>(9AM-5PM)</strong>';
-      if (isHoliday(staff)) return 'Staff: <i>' + staff + '</i>';
-      if (isTeamCode(staff)) return 'Staff: <i>' + staff + '</i> <strong>(9AM-5PM)</strong>';
-      return 'Staff: <span style="color:' + BLUE + ';">' + teamsAbbr(staff) + '</span> <strong>(9AM-5PM)</strong>';
-    })();
-
-    const studentLine = (() => {
-      if (!students.length) {
-        return 'Student: <span style="color:' + BLUE + ';"><i>No Student Staff</i></span>';
-      }
-      return 'Student: ' + students.map(s =>
-        '<span style="color:' + BLUE + ';">' + teamsAbbr(s.name) + '</span> <strong>(' + s.startTime + '-' + s.endTime + ')</strong>'
-      ).join(', ');
-    })();
-
-    return '<tr><td>'
-      + '<p><span style="font-size:inherit;"><strong><u>' + dayLabel + '</u></strong></span></p>'
-      + '<p>' + staffLine + '</p>'
-      + '<p>' + studentLine + '</p>'
-      + '<p>&nbsp;</p>'
-      + '</td></tr>';
-  }).join('');
-
-  // Box-drawing characters for day cards
-  const BOX_TOP = '<p>┌────────────────┐</p>';
-  const BOX_BOT = '<p>└────────────────┘</p>';
+  const weekShort = nextWeek.week.replace(/,?\s*\d{4}$/, ''); // strip ", 2026"
 
   const teamsDays = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};
     const date = teamsDate(data.date || '');
     const staff = data.staff || null;
-    const students = (data.students || []);
+    const students = (data.studentShifts || []);
     const dayLabel = teamsDay(d) + (date ? ', ' + date : '');
 
     const staffDisplay = (() => {
       if (!staff) return '<i>No staff assigned</i> <strong>(9AM-5PM)</strong>';
       if (isHoliday(staff)) return '<i>' + staff + '</i>';
       if (isTeamCode(staff)) return '<i>' + staff + '</i> <strong>(9AM-5PM)</strong>';
-      return '<span style="color:' + BLUE + ';">' + teamsAbbr(staff) + '</span> <strong>(9AM-5PM)</strong>';
+      return '<span style="color:' + NAME_BLUE + ';">' + teamsAbbr(staff) + '</span> <strong>(9AM-5PM)</strong>';
     })();
 
     const studentDisplay = students.length
       ? students.map(s =>
-          '<span style="color:' + BLUE + ';">' + teamsAbbr(s.name) + '</span> <strong>(' + s.startTime + '-' + s.endTime + ')</strong>'
-        ).join('<br>&nbsp; Student: ')
-      : '<span style="color:' + BLUE + ';"><i>No Student Staff</i></span>';
+          '<span style="color:' + NAME_BLUE + ';">' + teamsAbbr(s.name) + '</span>'
+          + ' <strong>(' + s.startTime + '-' + s.endTime + ')</strong>'
+        ).join('<br>Student: ')
+      : '<span style="color:' + NAME_BLUE + ';"><i>No Student Staff</i></span>';
 
-    return BOX_TOP
-      + '<p><span style="font-size:inherit;"><strong>&nbsp; <u>' + dayLabel + '</u></strong></span></p>'
-      + '<p>&nbsp; Staff: ' + staffDisplay + '</p>'
-      + '<p>&nbsp; Student: ' + studentDisplay + '</p>'
-      + BOX_BOT;
+    return '<li>'
+      + '<p><span style="font-size:inherit;"><strong><u>' + dayLabel + '</u></strong></span></p>'
+      + '<p>Staff: ' + staffDisplay + '</p>'
+      + '<p>Student: ' + studentDisplay + '</p>'
+      + '</li>';
   }).join('');
 
-  const weekShort = nextWeek.week.replace(/,?\s*\d{4}$/, ''); // strip ", 2026"
-
-  const teamsBlock = '<p><span style="background-color:rgb(255,255,255);color:' + BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
+  const teamsBlock =
+      '<p><span style="background-color:rgb(255,255,255);color:' + TITLE_BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
     + '<p><span style="font-size:small;"><i>Week of ' + weekShort + '</i></span></p>'
-    + teamsDays
-    + '<p>&nbsp;</p>'
-    + '<p><span style="color:' + BLUE + ';"><i>Thank you to everyone serving at the front desk this week!</i></span></p>';
+    + '<ul>' + teamsDays + '</ul>'
+    + '<p><span style="color:' + NAME_BLUE + ';"><i>Thank you to everyone serving at the front desk this week!</i></span></p>';
 
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',

@@ -324,8 +324,8 @@ function generate(scheduleData) {
   }).join('');
 
   // Box-drawing characters for day cards
-  const BOX_TOP = '<p>┌──────────────────┐</p>';
-  const BOX_BOT = '<p>└──────────────────┘</p>';
+  const BOX_TOP = '<p>┌────────────────┐</p>';
+  const BOX_BOT = '<p>└────────────────┘</p>';
 
   const teamsDays = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};

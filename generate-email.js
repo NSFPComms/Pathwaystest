@@ -262,46 +262,47 @@ function generate(scheduleData) {
     renderDay(d, nextWeek.schedule[d] || {})
   ).join('\n');
 
-  // Build HTML summary for Teams message
+  // Helper: first name + last initial (e.g. "Marshall Tucker" -> "Marshall T.")
+  function teamsAbbr(name) {
+    const parts = (name||'').trim().split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    return parts[0] + ' ' + parts[parts.length - 1][0] + '.';
+  }
+
+  // Build HTML summary for Teams message — minimal, dark-mode-safe, no backgrounds
   const teamsDays = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};
     const date = (data.date || '').toUpperCase();
     const staff = data.staff || null;
     const students = (data.students || []);
 
-    const staffLine = (() => {
-      if (!staff) return '<span style="color:#888;font-style:italic;">No staff assigned</span>';
-      if (isHoliday(staff)) return '<span style="color:#c62828;font-style:italic;">' + staff + '</span>';
-      if (isTeamCode(staff)) return '<span style="color:#6a1b9a;font-weight:600;">' + staff + '</span> <span style="color:#888;font-size:12px;">9AM-5PM</span>';
-      return '<strong>' + staff + '</strong> <span style="color:#888;font-size:12px;">9AM-5PM</span>';
+    // Day header: bold + underline, no background
+    const dayHeader = '<p style="margin:14px 0 4px;font-size:14px;font-weight:700;text-decoration:underline;">'
+      + d.slice(0,3) + (date ? ', ' + date : '') + '</p>';
+
+    // Staff line: first name + last initial; italics if team code or holiday
+    const staffDisplay = (() => {
+      if (!staff) return '<i>No staff assigned</i>';
+      if (isHoliday(staff)) return '<i>' + staff + '</i>';
+      if (isTeamCode(staff)) return '<i>' + staff + '</i> <b>(9AM-5PM)</b>';
+      return teamsAbbr(staff) + ' <b>(9AM-5PM)</b>';
     })();
 
-    const studentLines = students.length
-      ? students.map(s => {
-          const name = (s.name||'').trim().split(/\s+/);
-          const abbr = name.length > 1 ? name[0] + ' ' + name[name.length-1][0] + '.' : name[0];
-          return '<span style="color:#6a1b9a;font-style:italic;">' + abbr + '</span> <span style="color:#888;font-size:12px;">' + s.startTime + '–' + s.endTime + '</span>';
-        }).join('<br>')
-      : '<span style="color:#bbb;font-style:italic;">No student staff</span>';
+    // Student lines: first name + last initial, times in bold
+    const studentDisplay = students.length
+      ? students.map(s =>
+          teamsAbbr(s.name) + ' <b>(' + s.startTime + '-' + s.endTime + ')</b>'
+        ).join('<br>')
+      : 'No Student Staff';
 
-    return '<div style="margin-bottom:12px;border:1px solid #e0e0e0;border-radius:7px;overflow:hidden;">'
-      + '<div style="background:#e8eaf6;padding:7px 12px;font-weight:700;font-size:12px;color:#283593;letter-spacing:.05em;">'
-      + d.toUpperCase() + (date ? ', ' + date : '')
-      + '</div>'
-      + '<div style="padding:8px 12px;font-size:13px;line-height:1.8;">'
-      + '<span style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Staff</span>&nbsp;&nbsp;' + staffLine + '<br>'
-      + '<span style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Student Staff</span>&nbsp;&nbsp;' + studentLines
-      + '</div>'
-      + '</div>';
+    return dayHeader
+      + '<p style="margin:2px 0;">Staff: ' + staffDisplay + '</p>'
+      + '<p style="margin:2px 0;">Student: ' + studentDisplay + '</p>';
   }).join('');
 
-  const teamsBlock = '<div style="font-family:Arial,sans-serif;max-width:600px;">'
-    + '<div style="background:#1a1a2e;color:#fff;padding:14px 16px;border-radius:8px;margin-bottom:14px;">'
-    + '<div style="font-size:16px;font-weight:600;">Pathways Center Front Desk Schedule</div>'
-    + '<div style="opacity:0.75;font-size:12px;margin-top:3px;">Week of ' + nextWeek.week + '</div>'
-    + '</div>'
-    + teamsDays
-    + '</div>';
+  const teamsBlock = '<p style="margin:0 0 6px;display:inline-block;background:#e8eaf6;color:#283593;font-size:15px;font-weight:700;padding:6px 16px;border-radius:20px;">Front Desk Schedule</p>'
+    + '<p style="margin:0 0 14px;font-size:13px;font-weight:700;">Week of ' + nextWeek.week + '</p>'
+    + teamsDays;
 
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',

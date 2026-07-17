@@ -289,10 +289,32 @@ function generate(scheduleData) {
   function teamsDay(d) { return d.slice(0,3); }
 
 
-  const TITLE_BLUE = '#1E53A3';
-  const NAME_BLUE  = '#1976d2';
+  const BLUE = '#1E53A3'; // used for both title and names
 
   const weekShort = nextWeek.week.replace(/,?\s*\d{4}$/, ''); // strip ", 2026"
+
+  // Format a time string with small AM/PM and small :30
+  // e.g. "9AM" -> "9<xx-small>AM</xx-small>"
+  // e.g. "1:30PM" -> "1<12px>:30</12px><xx-small>PM</xx-small>"
+  // e.g. "5PM" -> "5<xx-small>PM</xx-small>"
+  function teamsTime(t) {
+    if (!t) return t;
+    // Match optional hour, optional :30, AM/PM
+    const m = t.match(/^(\d+)(:30)?(AM|PM)$/i);
+    if (!m) return t;
+    const hour = m[1];
+    const half = m[2] || '';
+    const ampm = m[3].toUpperCase();
+    let result = hour;
+    if (half) result += '<span style="font-size:12px;"><strong>:30</strong></span>';
+    result += '<span style="font-size:xx-small;"><strong>' + ampm + '</strong></span>';
+    return result;
+  }
+
+  // Format a time range like "9AM-5PM" or "1:30PM-5PM" with small text
+  function teamsTimeRange(start, end) {
+    return '<strong>(' + teamsTime(start) + '-' + teamsTime(end) + ')</strong>';
+  }
 
   const teamsDays = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};
@@ -302,31 +324,32 @@ function generate(scheduleData) {
     const dayLabel = teamsDay(d) + (date ? ', ' + date : '');
 
     const staffDisplay = (() => {
-      if (!staff) return '<i>No staff assigned</i> <strong>(9AM-5PM)</strong>';
+      if (!staff) return '<i>No staff assigned</i> ' + teamsTimeRange('9AM', '5PM');
       if (isHoliday(staff)) return '<i>' + staff + '</i>';
-      if (isTeamCode(staff)) return '<i>' + staff + '</i> <strong>(9AM-5PM)</strong>';
-      return '<span style="color:' + NAME_BLUE + ';">' + teamsAbbr(staff) + '</span> <strong>(9AM-5PM)</strong>';
+      if (isTeamCode(staff)) return '<i>' + staff + '</i> ' + teamsTimeRange('9AM', '5PM');
+      return '<span style="color:' + BLUE + ';">' + teamsAbbr(staff) + '</span> ' + teamsTimeRange('9AM', '5PM');
     })();
 
-    const studentDisplay = students.length
+    const studentLines = students.length
       ? students.map(s =>
-          '<span style="color:' + NAME_BLUE + ';">' + teamsAbbr(s.name) + '</span>'
-          + ' <strong>(' + s.startTime + '-' + s.endTime + ')</strong>'
-        ).join('<br>Student: ')
-      : '<span style="color:' + NAME_BLUE + ';"><i>No Student Staff</i></span>';
+          'Student: <span style="color:' + BLUE + ';">' + teamsAbbr(s.name) + '</span> '
+          + teamsTimeRange(s.startTime, s.endTime)
+        ).join('<br>')
+      : 'Student: <span style="color:' + BLUE + ';"><i>No Student Staff</i></span>';
 
     return '<li>'
-      + '<p><span style="font-size:inherit;"><strong><u>' + dayLabel + '</u></strong></span></p>'
-      + '<p>Staff: ' + staffDisplay + '</p>'
-      + '<p>Student: ' + studentDisplay + '</p>'
+      + '<span style="font-size:inherit;"><strong><u>' + dayLabel + '</u></strong></span><br>'
+      + 'Staff: ' + staffDisplay + '<br>'
+      + studentLines
       + '</li>';
   }).join('');
 
   const teamsBlock =
-      '<p><span style="background-color:rgb(255,255,255);color:' + TITLE_BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
-    + '<p><span style="font-size:small;"><i>Week of ' + weekShort + '</i></span></p>'
+      '<p><span style="background-color:rgb(255,255,255);color:' + BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
+    + '<p><i>Week of ' + weekShort + '</i></p>'
     + '<ul>' + teamsDays + '</ul>'
-    + '<p><span style="color:' + NAME_BLUE + ';"><i>Thank you to everyone serving at the front desk this week!</i></span></p>';
+    + '<p><span style="color:' + BLUE + ';"><i>Thank you to everyone serving at the front desk this week!&nbsp;</i></span><br>'
+    + '<a href="' + CANVA_URL + '" target="_blank"><span style="font-size:12px;">Click here to be taken to edit the Schedule on Canva.</span></a></p>';
 
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',

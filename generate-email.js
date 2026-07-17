@@ -324,8 +324,8 @@ function generate(scheduleData) {
   }).join('');
 
   // Box-drawing characters for day cards
-  const BOX_TOP = '<p>┌────────────────┐</p>';
-  const BOX_BOT = '<p>└────────────────┘</p>';
+  const BOX_TOP = '<p>┌──────────────────┐</p>';
+  const BOX_BOT = '<p>└──────────────────┘</p>';
 
   const teamsDays = DAYS.map(d => {
     const data = nextWeek.schedule[d] || {};
@@ -354,13 +354,13 @@ function generate(scheduleData) {
       + BOX_BOT;
   }).join('');
 
-  const teamsBlock = '<div style="background-color:rgb(255,255,255);padding:4px;">'
-    + '<p><span style="color:' + BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
-    + '<p><span style="font-size:inherit;"><i>Week of ' + nextWeek.week + '</i></span></p>'
+  const weekShort = nextWeek.week.replace(/,?\s*\d{4}$/, ''); // strip ", 2026"
+
+  const teamsBlock = '<p><span style="background-color:rgb(255,255,255);color:' + BLUE + ';font-size:x-large;"><strong>Front Desk Schedule</strong></span></p>'
+    + '<p><span style="font-size:small;"><i>Week of ' + weekShort + '</i></span></p>'
     + teamsDays
     + '<p>&nbsp;</p>'
-    + '<p><span style="color:' + BLUE + ';"><i>Thank you to everyone serving at the front desk this week!</i></span></p>'
-    + '</div>';
+    + '<p><span style="color:' + BLUE + ';"><i>Thank you to everyone serving at the front desk this week!</i></span></p>';
 
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',

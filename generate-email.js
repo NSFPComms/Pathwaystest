@@ -262,6 +262,22 @@ function generate(scheduleData) {
     renderDay(d, nextWeek.schedule[d] || {})
   ).join('\n');
 
+  // Build plain-text summary for Teams message
+  const teamsLines = DAYS.map(d => {
+    const data = nextWeek.schedule[d] || {};
+    const staff = data.staff || 'No staff';
+    const students = (data.students || []);
+    const studentStr = students.length
+      ? students.map(s => {
+          const name = (s.name||'').trim().split(/\s+/);
+          const abbr = name.length > 1 ? name[0] + ' ' + name[name.length-1][0] + '.' : name[0];
+          return abbr + ' ' + s.startTime + '-' + s.endTime;
+        }).join(', ')
+      : 'No student staff';
+    return d + ': ' + staff + ' | ' + studentStr;
+  }).join('\n');
+  const teamsBlock = '\u{1F4C5} Front Desk — ' + nextWeek.week + '\n\n' + teamsLines;
+
   const fullTable = renderFullSchedule(unique, nextWeek);
   const updated = new Date(scheduleData.lastUpdated).toLocaleDateString('en-US',
     { weekday:'long', year:'numeric', month:'long', day:'numeric' });
@@ -327,6 +343,9 @@ ${fullTable}
   Sent automatically every Friday. Schedule last updated: ${updated}.
 </div>
 
+<!--TEAMS:
+${teamsBlock}
+END-TEAMS-->
 </body></html>`;
 }
 

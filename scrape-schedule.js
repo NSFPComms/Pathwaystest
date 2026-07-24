@@ -192,18 +192,22 @@ function parseSlideGeometry(slideData) {
       }
     }
 
-    // Case 2: lone cell with a half-slot empty cell directly above it
-    // (e.g. Greyson alone, starts at 1:30PM with no one before him in column)
+    // Case 2: lone cell with a half-slot empty cell directly above it OR
+    // within one full slot above it (handles cases where a full empty slot
+    // precedes the spacer, e.g. no morning student + 1:30PM afternoon start).
     for (let i = 0; i < sorted.length; i++) {
       const cell = sorted[i];
       if (halfHourAdjustments.has(cell)) continue; // already adjusted
       const spacerAbove = emptyCells.find(e => {
         const xOverlap = e.right > cell.left + 1 && e.left < cell.right - 1;
-        const buttsUp = Math.abs(e.bottom - cell.top) <= 0.5;
+        // The spacer's bottom must be at or just above cell.top, within 1 full slot
+        const aboveCell = e.bottom <= cell.top + 0.5 && e.bottom >= cell.top - slotHeight - 0.5;
         const isHalfSlot = e.height >= slotHeight * 0.4 && e.height <= slotHeight * 1.2;
-        return xOverlap && buttsUp && isHalfSlot;
+        return xOverlap && aboveCell && isHalfSlot;
       });
       if (spacerAbove) {
+        // Adjusted top = where cell would start if it began at spacer midpoint
+        // i.e. the slot immediately after the spacer starts = spacerAbove.top + half-slot
         const adjustedTop = spacerAbove.top + spacerAbove.height / 2;
         console.log('  ½hr spacer above "' + cell.text.trim() + '": ' + cell.top.toFixed(2) + '→' + adjustedTop.toFixed(2));
         halfHourAdjustments.set(cell, Object.assign(halfHourAdjustments.get(cell)||{}, { top: adjustedTop }));

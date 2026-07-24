@@ -1,5 +1,4 @@
 name: Scrape Canva Schedule
-
 on:
   schedule:
     - cron: '0 12 * * 1-5'   # 7am ET = 12pm UTC, weekdays (scrape daily)
@@ -9,6 +8,8 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -27,14 +28,36 @@ jobs:
       - name: Scrape schedule
         run: node scrape-schedule.js
 
-      - name: Generate email (Fridays only)
-        if: github.event.schedule == '30 12 * * 5' || github.event_name == 'workflow_dispatch'
-        run: node generate-email.js
-
-      - name: Commit and push
+      - name: Commit schedule.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add schedule.json email-body.html email-subject.txt
-          git diff --staged --quiet || git commit -m "Update schedule [$(date -u '+%Y-%m-%d %H:%M UTC')]"
-          git push
+          git add schedule.json
+          git diff --staged --quiet || git commit -m "Scrape schedule [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+          git pull --rebase origin main && git push
+
+  generate-email:
+    runs-on: ubuntu-latest
+    needs: scrape   # waits for scrape to finish and push before starting
+    if: github.event.schedule == '30 12 * * 5' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4  # gets the freshly scraped schedule.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate email
+        run: node generate-email.js
+
+      - name: Commit email files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add email-body.html email-subject.txt
+          git diff --staged --quiet || git commit -m "Generate email [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+          git pull --rebase origin main && git push

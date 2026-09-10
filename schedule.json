@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-09-09T15:33:51.113Z",
+  "lastUpdated": "2026-09-10T15:28:59.715Z",
   "source": "https://www.canva.com/design/DAHHhHnjj2M/oEPQa0XCe7iMRugy6ttYrg/view",
   "totalWeeks": 1,
   "schedules": [
@@ -7,32 +7,127 @@
       "week": "SEPTEMBER 21 – SEPTEMBER 30, 2026",
       "schedule": {
         "Monday": {
-          "date": "AUG 10",
+          "date": null,
           "staff": "Tim",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "11AM",
+              "endTime": "3PM",
+              "name": "Emily Huang"
+            },
+            {
+              "startTime": "3PM",
+              "endTime": "5PM",
+              "name": "Jibola Isinkaye"
+            },
+            {
+              "startTime": "5PM",
+              "endTime": "7PM",
+              "name": "Evelyn Yu"
+            },
+            {
+              "startTime": "7PM",
+              "endTime": "11PM",
+              "name": "Zachary Etzioni"
+            }
+          ]
         },
         "Tuesday": {
-          "date": "AUG 11",
+          "date": null,
           "staff": "Tiffany",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "11AM",
+              "endTime": "1PM",
+              "name": "Kalp Soni"
+            },
+            {
+              "startTime": "1PM",
+              "endTime": "3PM",
+              "name": "Zane Wolchok"
+            },
+            {
+              "startTime": "3PM",
+              "endTime": "7PM",
+              "name": "TBD"
+            },
+            {
+              "startTime": "7PM",
+              "endTime": "11PM",
+              "name": "TBD"
+            }
+          ]
         },
         "Wednesday": {
-          "date": "AUG 12",
+          "date": null,
           "staff": "Michael",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "11AM",
+              "endTime": "3PM",
+              "name": "Kaitlyn Lung"
+            },
+            {
+              "startTime": "3PM",
+              "endTime": "5PM",
+              "name": "Claire Dokko"
+            },
+            {
+              "startTime": "5PM",
+              "endTime": "7PM",
+              "name": "Sharan Dodwani"
+            },
+            {
+              "startTime": "7PM",
+              "endTime": "11PM",
+              "name": "TBD"
+            }
+          ]
         },
         "Thursday": {
-          "date": "AUG 13",
+          "date": null,
           "staff": "PHA",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "11AM",
+              "endTime": "3PM",
+              "name": "Becki M’mari"
+            },
+            {
+              "startTime": "3PM",
+              "endTime": "7PM",
+              "name": "TBD"
+            },
+            {
+              "startTime": "7PM",
+              "endTime": "11PM",
+              "name": "TBD (an EXP student may be available)"
+            }
+          ]
         },
         "Friday": {
-          "date": "AUG 14",
+          "date": null,
           "staff": "AJ",
-          "studentShifts": []
+          "studentShifts": [
+            {
+              "startTime": "11AM",
+              "endTime": "3PM",
+              "name": "Zachary Etzioni"
+            },
+            {
+              "startTime": "3PM",
+              "endTime": "7PM",
+              "name": "Minda Lai"
+            },
+            {
+              "startTime": "7PM",
+              "endTime": "11PM",
+              "name": "Tony Wu"
+            }
+          ]
         }
       }
     }
   ],
-  "summary": "Week of SEPTEMBER 21 – SEPTEMBER 30, 2026:\n  Monday (AUG 10): Staff=Tim | Students=No student staff assigned\n  Tuesday (AUG 11): Staff=Tiffany | Students=No student staff assigned\n  Wednesday (AUG 12): Staff=Michael | Students=No student staff assigned\n  Thursday (AUG 13): Staff=PHA | Students=No student staff assigned\n  Friday (AUG 14): Staff=AJ | Students=No student staff assigned"
+  "summary": "Week of SEPTEMBER 21 – SEPTEMBER 30, 2026:\n  Monday (null): Staff=Tim | Students=Emily Huang 11AM-3PM, Jibola Isinkaye 3PM-5PM, Evelyn Yu 5PM-7PM, Zachary Etzioni 7PM-11PM\n  Tuesday (null): Staff=Tiffany | Students=Kalp Soni 11AM-1PM, Zane Wolchok 1PM-3PM, TBD 3PM-7PM, TBD 7PM-11PM\n  Wednesday (null): Staff=Michael | Students=Kaitlyn Lung 11AM-3PM, Claire Dokko 3PM-5PM, Sharan Dodwani 5PM-7PM, TBD 7PM-11PM\n  Thursday (null): Staff=PHA | Students=Becki M’mari 11AM-3PM, TBD 3PM-7PM, TBD (an EXP student may be available) 7PM-11PM\n  Friday (null): Staff=AJ | Students=Zachary Etzioni 11AM-3PM, Minda Lai 3PM-7PM, Tony Wu 7PM-11PM"
 }
